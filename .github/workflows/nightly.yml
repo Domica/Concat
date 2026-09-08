@@ -31,11 +31,12 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     uses: ./.github/workflows/mobile.yml
     secrets: inherit
-    continue-on-error: true  # Don't fail the whole nightly if mobile build fails
 
   publish:
     name: Refresh the nightly release
-    needs: [build]  # Only wait for desktop build, not phones
+    # Only wait for desktop builds. Phones can fail independently (missing
+    # signing credentials on forks) without blocking the release.
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -92,7 +93,7 @@ jobs:
             || git rev-list --max-parents=0 HEAD | tail -1)
           .github/release-notes.sh "$previous" HEAD \
             "Nightly ${{ steps.stamp.outputs.version }} · ${{ steps.stamp.outputs.date }} · ${{ steps.stamp.outputs.sha }}" nightly \
-            > "$RUNDER_TEMP/notes.md"
+            > "$RUNNER_TEMP/notes.md"
           cat "$RUNNER_TEMP/notes.md"
 
       # The tag follows main, so the release always points at the commit
