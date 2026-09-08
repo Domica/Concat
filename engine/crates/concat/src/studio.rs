@@ -1677,7 +1677,6 @@ impl Studio {
                 preserve_pitch: piece.preserve_pitch,
                 chain: piece.filter_chain,
             })
-            .take(available_slots)
             .collect();
         self.host
             .playback
@@ -2120,6 +2119,7 @@ impl Studio {
                     item.duration,
                 )
             })
+            .take(available_slots)
             .collect();
         for (id, path, kind, has_audio, duration) in wanted {
             self.art_pending.insert(id.clone());
