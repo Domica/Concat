@@ -49,6 +49,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_MIN_STACK: 33554432
   # BtbN's autobuilds: GPL (x264 in), shared, FFmpeg 8.1, one per arch.
   FFMPEG_RELEASE: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest
   FFMPEG_VERSION: 8.1
