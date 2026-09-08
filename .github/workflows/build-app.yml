@@ -1,10 +1,29 @@
-name: Build app (Windows x64 only)
+name: Build app
 
-# Simplified workflow: builds only Windows x86_64 target.
-# Fixes stack overflow issue during Slint build script execution.
-
+# Builds Concat - the Slint window, `engine/crates/concat` - for Windows x64.
+# Simplified from the original multi-platform matrix: only the Windows
+# x86_64 target, with the Slint stack-overflow workaround baked in.
+#
+# Reusable: nightly.yml calls it on every push to main, release.yml on every
+# tag.
 on:
-  workflow_dispatch:
+  workflow_call:
+    secrets:
+      APPLE_CERTIFICATE_P12:
+        description: Base64 of a Developer ID Application .p12
+        required: false
+      APPLE_CERTIFICATE_PASSWORD:
+        required: false
+      APPLE_SIGNING_IDENTITY:
+        description: "The identity to sign with, e.g. Developer ID Application: Name (TEAMID)"
+        required: false
+      APPLE_ID:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+      APPLE_APP_PASSWORD:
+        description: An app-specific password for notarytool
+        required: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -30,6 +49,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Building Concat $version for x86_64-pc-windows-msvc"
 
+      # ── Windows ────────────────────────────────────────────────────────
       - name: FFmpeg development libraries (Windows)
         shell: pwsh
         run: |
@@ -67,25 +87,26 @@ jobs:
           key: x86_64-pc-windows-msvc
           env-vars: CARGO CC CFLAGS CXX CMAKE RUST GGML
 
-      - name: Build (Windows with increased stack)
+      # The shipping profile: fat LTO, panic=abort, stripped.
+      #
+      # Windows runners have a small default stack (1 MB) and Slint's build
+      # script recurses deep while parsing the .slint tree, so the build
+      # runs on a thread with a 16 MB stack instead of the default one.
+      - name: Build
         shell: pwsh
         working-directory: engine
         run: |
           $ErrorActionPreference = "Stop"
-          # Windows runner ima mali default stack (1MB), a Slint parser treba više.
-          # Pokrećemo cargo u novom thread-u sa 16MB stack-om.
           $target = "x86_64-pc-windows-msvc"
-          $thread = [System.Threading.Thread]::new({
+          $script = {
             param($target)
-            Set-Location "engine"
             cargo build --profile app -p concat --target $target 2>&1 | Tee-Object -FilePath "build.log"
-          }, 16777216)  # 16 MB stack
+            exit $LASTEXITCODE
+          }
+          $thread = [System.Threading.Thread]::new([System.Threading.ParameterizedThreadStart]$script, 16777216)
           $thread.Start($target)
           $thread.Join()
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Build failed with exit code $LASTEXITCODE"
-            exit 1
-          }
+          if ($LASTEXITCODE -ne 0) { throw "cargo build failed with exit code $LASTEXITCODE" }
 
       - name: Build log to the summary (failure only)
         if: failure()
@@ -100,6 +121,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      # ── Package: Windows ───────────────────────────────────────────────
       - name: Stage (Windows)
         shell: pwsh
         env:
