@@ -1669,6 +1669,7 @@ impl Studio {
                 preserve_pitch: piece.preserve_pitch,
                 chain: piece.filter_chain,
             })
+            .take(available_slots)
             .collect();
         self.host
             .playback
@@ -2076,6 +2077,12 @@ impl Studio {
             return;
         };
         let project_path = session.path().to_owned();
+
+        const MAX_CONCURRENT_JOBS: usize = 2;
+        let available_slots = MAX_CONCURRENT_JOBS.saturating_sub(self.art_pending.len());
+        if available_slots == 0 {
+            return;
+        }
         let wanted: Vec<(String, String, model::MediaKind, bool, Option<f64>)> = self
             .project()
             .media
@@ -2126,6 +2133,7 @@ impl Studio {
                             .borrow_mut()
                             .retain(|key, _| !key.starts_with(&prefix));
                     }
+                    studio.request_media_art();
                 },
             );
         }
@@ -4297,6 +4305,12 @@ impl Studio {
                 return;
             };
             let project_path = session.path().to_owned();
+
+        const MAX_CONCURRENT_JOBS: usize = 2;
+        let available_slots = MAX_CONCURRENT_JOBS.saturating_sub(self.art_pending.len());
+        if available_slots == 0 {
+            return;
+        }
             let source_time = clip.source_start + (at - clip.start) * clip.speed;
             let frame = match media::still_at(&media.path, source_time, 1280) {
                 Ok(frame) => frame,
