@@ -37,7 +37,9 @@ use concat_effects::Catalogue;
 use concat_media::audio::{self, AudioClip};
 use concat_media::{DecodeOptions, Decoder, EncodeOptions, Encoder, FrameSink, FrameSource};
 use concat_project::model::{AppliedFilter, Cutout};
-use concat_render::{Compositor, CpuCompositor, Layer, Placement, Treatment as GpuTreatment, plan_frame};
+use concat_render::{
+    Compositor, CpuCompositor, Layer, Placement, Treatment as GpuTreatment, plan_frame,
+};
 use concat_vision::{Mapping, MaskStore};
 use serde::Deserialize;
 
@@ -1266,7 +1268,11 @@ fn build_timeline(
                 if !clip_passes.is_empty() {
                     passes.insert(id, clip_passes);
                 }
-                if clip.effects.iter().any(|link| link.enabled && !link.keys.is_empty()) {
+                if clip
+                    .effects
+                    .iter()
+                    .any(|link| link.enabled && !link.keys.is_empty())
+                {
                     riding.insert(
                         id,
                         RidingChain {
@@ -1613,8 +1619,7 @@ pub fn preview_sources_of(
     let frame_seconds = time.as_f64();
     let plan_at = plan_frame(timeline, time);
 
-    let mut sources: Vec<Source<std::sync::Arc<Frame>>> =
-        Vec::with_capacity(plan_at.layers.len());
+    let mut sources: Vec<Source<std::sync::Arc<Frame>>> = Vec::with_capacity(plan_at.layers.len());
     let mut failures: Vec<String> = Vec::new();
     for layer in &plan_at.layers {
         let (decode_width, decode_height) = decode_sizes

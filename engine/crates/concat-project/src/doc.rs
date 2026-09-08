@@ -485,7 +485,8 @@ fn read_keys(raw: Option<&Value>) -> Vec<ClipKey> {
             let property = KeyProperty::from_name(entry.get("property")?.as_str()?)?;
             let at = number(entry.get("at"), -1.0);
             let value = number(entry.get("value"), f64::NAN);
-            (0.0..=1.0).contains(&at)
+            (0.0..=1.0)
+                .contains(&at)
                 .then_some(ClipKey {
                     property,
                     at,

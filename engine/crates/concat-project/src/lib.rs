@@ -135,7 +135,10 @@ mod tests {
 
         let clips = &editor.project().active().clips;
         assert_eq!(clips.len(), 3, "head + freeze + tail");
-        let freeze = clips.iter().find(|clip| clip.id == freeze_id).expect("freeze");
+        let freeze = clips
+            .iter()
+            .find(|clip| clip.id == freeze_id)
+            .expect("freeze");
         assert_eq!(freeze.kind, ClipKind::Image);
         assert_eq!(freeze.start, 4.0);
         assert_eq!(freeze.duration, 1.0);
@@ -1635,7 +1638,12 @@ mod tests {
                 })
                 .expect("keys");
         }
-        let link = &editor.project().active().clip(&clip_id).expect("clip").video_effects[0];
+        let link = &editor
+            .project()
+            .active()
+            .clip(&clip_id)
+            .expect("clip")
+            .video_effects[0];
         assert!(link.is_keyed("exposure"));
         assert!(!link.is_keyed("contrast"));
         // Halfway along a straight ride between -1 and 1 is 0; the constant
@@ -1647,7 +1655,12 @@ mod tests {
 
         let document = editor.to_document(&settings());
         let restored = Editor::from_document(&document).expect("loads");
-        let link = &restored.project().active().clip(&clip_id).expect("clip").video_effects[0];
+        let link = &restored
+            .project()
+            .active()
+            .clip(&clip_id)
+            .expect("clip")
+            .video_effects[0];
         assert_eq!(link.keys_on("exposure").len(), 2);
 
         let mut editor = restored;
@@ -1666,7 +1679,12 @@ mod tests {
                 key: "exposure".to_owned(),
             })
             .expect("clears the rest");
-        let link = &editor.project().active().clip(&clip_id).expect("clip").video_effects[0];
+        let link = &editor
+            .project()
+            .active()
+            .clip(&clip_id)
+            .expect("clip")
+            .video_effects[0];
         assert!(!link.is_keyed("exposure"));
         assert_eq!(link.value_at("exposure", 0.5, 0.0), 1.0);
     }

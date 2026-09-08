@@ -713,7 +713,12 @@ pub struct Studio {
     /// included - and the revision and output size it was made at. Shared
     /// with the monitor by pointer, so it can keep its plan for as long as
     /// the list is the same one.
-    flat: Option<(u64, u32, u32, std::sync::Arc<Vec<concat_export::ExportClip>>)>,
+    flat: Option<(
+        u64,
+        u32,
+        u32,
+        std::sync::Arc<Vec<concat_export::ExportClip>>,
+    )>,
     /// An inspector commit waiting to land: a knob being dragged commits
     /// on every move, and each commit was a command, an undo of the last,
     /// a rebuild of the mix and a full publish. The commit is held until
@@ -1079,12 +1084,15 @@ fn import_cube(dir: &std::path::Path, path: &std::path::Path) -> Result<String, 
         }
         out.push(255);
     }
-    let file = std::fs::File::create(folder.join("preview.png")).map_err(|error| error.to_string())?;
+    let file =
+        std::fs::File::create(folder.join("preview.png")).map_err(|error| error.to_string())?;
     let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), width, height);
     encoder.set_color(png::ColorType::Rgba);
     encoder.set_depth(png::BitDepth::Eight);
     let mut writer = encoder.write_header().map_err(|error| error.to_string())?;
-    writer.write_image_data(&out).map_err(|error| error.to_string())?;
+    writer
+        .write_image_data(&out)
+        .map_err(|error| error.to_string())?;
     Ok(id)
 }
 
@@ -1750,48 +1758,53 @@ impl Studio {
         if let Some(filter_id) = self.audition.clone() {
             let effects = vec![AppliedFilter::new(filter_id)];
             let video_filter_chain = concat_export::chains::video_effect_chain(&effects);
-            let track = clips.iter().map(|flat| flat.track).max().map_or(0, |top| top + 1);
-            own.get_or_insert_with(|| (*clips).clone()).push(concat_export::ExportClip {
-                path: String::new(),
-                kind: concat_export::ClipKind::Layer,
-                start: 0.0,
-                duration: f64::from(self.duration()).max(1.0),
-                source_start: 0.0,
-                track,
-                hidden: false,
-                muted: true,
-                volume: 0.0,
-                fade_in: 0.0,
-                fade_out: 0.0,
-                filter_chain: String::new(),
-                speed: 1.0,
-                preserve_pitch: true,
-                speed_curve: Vec::new(),
-                reverse: false,
-                animation: Vec::new(),
-                flip_h: false,
-                flip_v: false,
-                blend: String::new(),
-                crop: None,
-                effects,
-                transition_chain: String::new(),
-                scale: 1.0,
-                offset_x: 0.0,
-                offset_y: 0.0,
-                rotation: 0.0,
-                stretch_x: 1.0,
-                stretch_y: 1.0,
-                opacity: 1.0,
-                video_filter_chain,
-                transition: None,
-                video_fade_in: 0.0,
-                media_width: None,
-                media_height: None,
-                has_audio: Some(false),
-                cutout: None,
-                mask_dir: String::new(),
-                highlighted: false,
-            });
+            let track = clips
+                .iter()
+                .map(|flat| flat.track)
+                .max()
+                .map_or(0, |top| top + 1);
+            own.get_or_insert_with(|| (*clips).clone())
+                .push(concat_export::ExportClip {
+                    path: String::new(),
+                    kind: concat_export::ClipKind::Layer,
+                    start: 0.0,
+                    duration: f64::from(self.duration()).max(1.0),
+                    source_start: 0.0,
+                    track,
+                    hidden: false,
+                    muted: true,
+                    volume: 0.0,
+                    fade_in: 0.0,
+                    fade_out: 0.0,
+                    filter_chain: String::new(),
+                    speed: 1.0,
+                    preserve_pitch: true,
+                    speed_curve: Vec::new(),
+                    reverse: false,
+                    animation: Vec::new(),
+                    flip_h: false,
+                    flip_v: false,
+                    blend: String::new(),
+                    crop: None,
+                    effects,
+                    transition_chain: String::new(),
+                    scale: 1.0,
+                    offset_x: 0.0,
+                    offset_y: 0.0,
+                    rotation: 0.0,
+                    stretch_x: 1.0,
+                    stretch_y: 1.0,
+                    opacity: 1.0,
+                    video_filter_chain,
+                    transition: None,
+                    video_fade_in: 0.0,
+                    media_width: None,
+                    media_height: None,
+                    has_audio: Some(false),
+                    cutout: None,
+                    mask_dir: String::new(),
+                    highlighted: false,
+                });
         }
         // While the brushes are out, the clip being painted is drawn with
         // its cutout tinted over the whole picture rather than cut, so a
@@ -1838,7 +1851,9 @@ impl Studio {
                 {
                     let monitor = monitor.clone();
                     let settings = settings.clone();
-                    crate::host::spawn_detached(move || monitor.prefetch(clips, &settings, spec, 2));
+                    crate::host::spawn_detached(move || {
+                        monitor.prefetch(clips, &settings, spec, 2)
+                    });
                 }
                 frame
             },
@@ -3959,9 +3974,7 @@ impl Studio {
         // One analysis per media and subject, keyed the way the job map is.
         let wanted: Vec<(String, AnalyseRequest)> = Cutouts::requests(self.project(), &project)
             .into_iter()
-            .map(|(media_id, request)| {
-                (Self::analysis_key(&media_id, request.subject), request)
-            })
+            .map(|(media_id, request)| (Self::analysis_key(&media_id, request.subject), request))
             .collect();
         let Some((id, request)) = wanted
             .into_iter()
@@ -4306,11 +4319,11 @@ impl Studio {
             };
             let project_path = session.path().to_owned();
 
-        const MAX_CONCURRENT_JOBS: usize = 2;
-        let available_slots = MAX_CONCURRENT_JOBS.saturating_sub(self.art_pending.len());
-        if available_slots == 0 {
-            return;
-        }
+            const MAX_CONCURRENT_JOBS: usize = 2;
+            let available_slots = MAX_CONCURRENT_JOBS.saturating_sub(self.art_pending.len());
+            if available_slots == 0 {
+                return;
+            }
             let source_time = clip.source_start + (at - clip.start) * clip.speed;
             let frame = match media::still_at(&media.path, source_time, 1280) {
                 Ok(frame) => frame,
@@ -4501,9 +4514,9 @@ impl Studio {
                 self.start.error.clear();
                 self.recents = projects::list(&self.host.dirs.config);
                 self.host.monitor.clear();
-        self.audition = None;
-        self.revision += 1;
-        self.flat = None;
+                self.audition = None;
+                self.revision += 1;
+                self.flat = None;
                 self.sync_audio();
                 self.request_media_art();
                 self.request_preview();
@@ -5222,7 +5235,8 @@ impl Studio {
     /// shader that reads it - with a card still rendered through the table
     /// here, and the catalogue is rebuilt so the Filters page shows them.
     pub fn import_lut(&mut self) {
-        let Some(paths) = crate::platform::pick_files(&t("Import LUT"), Some((t("LUT").as_str(), &["cube"])))
+        let Some(paths) =
+            crate::platform::pick_files(&t("Import LUT"), Some((t("LUT").as_str(), &["cube"])))
         else {
             return;
         };
@@ -5235,7 +5249,10 @@ impl Studio {
                     imported += 1;
                 }
                 Err(error) => {
-                    self.notify(&tf("Could not import {0}: {1}", &[&path.display(), &error]), true);
+                    self.notify(
+                        &tf("Could not import {0}: {1}", &[&path.display(), &error]),
+                        true,
+                    );
                 }
             }
         }
@@ -5247,7 +5264,10 @@ impl Studio {
         }
         self.library[0].query.clear();
         self.notify(
-            &tf("Imported {0} look(s); find them under Imported", &[&imported]),
+            &tf(
+                "Imported {0} look(s); find them under Imported",
+                &[&imported],
+            ),
             false,
         );
     }
@@ -5706,7 +5726,6 @@ impl Studio {
         self.seek((start + target * duration) as f32);
     }
 
-
     /// The selection, flattened for the inspector: exactly one clip or
     /// nothing.
     fn selected(&self) -> SelectedClipData {
@@ -5970,13 +5989,16 @@ impl Studio {
             favourites: starred.clone(),
         };
         if self.shelf_stamp.borrow().as_ref() != Some(&stamp) {
-            let (groups, entries) = shelves(SHELF_KINDS[0], &self.library[0], starred, &self.look_art);
+            let (groups, entries) =
+                shelves(SHELF_KINDS[0], &self.library[0], starred, &self.look_art);
             sync(&models.filter_groups, groups);
             sync(&models.catalogue_filters, entries);
-            let (groups, entries) = shelves(SHELF_KINDS[1], &self.library[1], starred, &self.look_art);
+            let (groups, entries) =
+                shelves(SHELF_KINDS[1], &self.library[1], starred, &self.look_art);
             sync(&models.effect_groups, groups);
             sync(&models.catalogue_effects, entries);
-            let (groups, entries) = shelves(SHELF_KINDS[2], &self.library[2], starred, &self.look_art);
+            let (groups, entries) =
+                shelves(SHELF_KINDS[2], &self.library[2], starred, &self.look_art);
             sync(&models.audio_groups, groups);
             sync(&models.catalogue_audio, entries);
             *self.shelf_stamp.borrow_mut() = Some(stamp);

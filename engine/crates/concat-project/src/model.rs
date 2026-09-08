@@ -1007,8 +1007,20 @@ impl Clip {
         }
         let at = at.clamp(0.0, 1.0);
         match self.key_at(property, at) {
-            Some(index) => self.keys[index] = ClipKey { property, at, value, ease },
-            None => self.keys.push(ClipKey { property, at, value, ease }),
+            Some(index) => {
+                self.keys[index] = ClipKey {
+                    property,
+                    at,
+                    value,
+                    ease,
+                }
+            }
+            None => self.keys.push(ClipKey {
+                property,
+                at,
+                value,
+                ease,
+            }),
         }
         self.sort_keys();
     }
@@ -1036,8 +1048,9 @@ impl Clip {
     /// Called by everything that can put a key in, including the document
     /// reader, so a hand-edited file cannot produce an unsorted track.
     pub fn sort_keys(&mut self) {
-        self.keys
-            .retain(|key| key.at.is_finite() && key.value.is_finite() && (0.0..=1.0).contains(&key.at));
+        self.keys.retain(|key| {
+            key.at.is_finite() && key.value.is_finite() && (0.0..=1.0).contains(&key.at)
+        });
         self.keys.sort_by(|a, b| {
             (a.property as u8)
                 .cmp(&(b.property as u8))

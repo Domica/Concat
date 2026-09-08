@@ -1310,8 +1310,7 @@ pub fn apply(
                 let Some(item) = still else {
                     return Ok(Outcome::default());
                 };
-                if let Some(existing) = project.media.iter().find(|media| media.path == item.path)
-                {
+                if let Some(existing) = project.media.iter().find(|media| media.path == item.path) {
                     existing.id.clone()
                 } else {
                     let id = mint.next("m");
