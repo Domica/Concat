@@ -4376,6 +4376,7 @@ impl Studio {
     /// Duplicate every unlocked selected clip (right-to-left by start so
     /// neighbours do not stack). Falls back to the menu target when the
     /// selection is empty.
+    #[allow(clippy::collapsible_if)]
     pub fn duplicate_selected(&mut self) {
         let mut sources: Vec<Clip> = self
             .selection
