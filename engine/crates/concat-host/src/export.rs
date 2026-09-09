@@ -54,6 +54,7 @@ pub fn request(session: &Session, spec: &ExportSpec, titles: Vec<ExportClip>) ->
         rate_den: settings.rate_den,
         crf: spec.crf,
         preset: spec.preset.clone(),
+        encoder: spec.encoder.clone(),
         clips,
     }
 }
