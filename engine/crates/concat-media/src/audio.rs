@@ -735,31 +735,30 @@ pub fn mux(video: &Path, audio: &Path, output: &Path) -> Result<()> {
     // soundtrack died at exactly 30/46.9 of the picture. `write_interleaved`
     // still does the final ordering; feeding it in order keeps its buffer
     // small. The file ends with the shorter input, as `-shortest`.
-    let mut next_packet =
-        |input: &mut ffmpeg::format::context::Input,
-         wanted: usize,
-         from: ffmpeg::Rational,
-         to: ffmpeg::Rational,
-         stream: usize,
-         path: &Path|
+    let mut next_packet = |input: &mut ffmpeg::format::context::Input,
+                           wanted: usize,
+                           from: ffmpeg::Rational,
+                           to: ffmpeg::Rational,
+                           stream: usize,
+                           path: &Path|
      -> Result<Option<ffmpeg::Packet>> {
-            loop {
-                let mut packet = ffmpeg::Packet::empty();
-                match packet.read(input) {
-                    Ok(()) => {
-                        if packet.stream() != wanted {
-                            continue;
-                        }
-                        packet.set_stream(stream);
-                        packet.rescale_ts(from, to);
-                        packet.set_position(-1);
-                        return Ok(Some(packet));
+        loop {
+            let mut packet = ffmpeg::Packet::empty();
+            match packet.read(input) {
+                Ok(()) => {
+                    if packet.stream() != wanted {
+                        continue;
                     }
-                    Err(ffmpeg::Error::Eof) => return Ok(None),
-                    Err(error) => return Err(ffi::fail("read", path, error)),
+                    packet.set_stream(stream);
+                    packet.rescale_ts(from, to);
+                    packet.set_position(-1);
+                    return Ok(Some(packet));
                 }
+                Err(ffmpeg::Error::Eof) => return Ok(None),
+                Err(error) => return Err(ffi::fail("read", path, error)),
             }
-        };
+        }
+    };
 
     // Timestamps from each input arrive in that input's own time base -
     // 1/15360 for this project's video, 1/48000 for its audio - so a bare
