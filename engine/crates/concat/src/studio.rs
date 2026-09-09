@@ -6840,6 +6840,7 @@ impl Studio {
                     "",
                     has_selection_media,
                 ),
+                row("open", t("Open project…"), Glyph::Import, "⌘O", true),
                 row("import", t("Import media…"), Glyph::Import, "⌘I", true),
                 row("save", t("Save"), Glyph::Import, "⌘S", true),
                 row(
