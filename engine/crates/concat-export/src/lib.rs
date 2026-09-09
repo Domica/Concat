@@ -1888,6 +1888,7 @@ pub fn preview_plan(
         rate_den,
         crf: 18,
         preset: String::new(),
+        encoder: "libx264".to_owned(),
         clips: Vec::new(),
     };
     PreviewPlan {
