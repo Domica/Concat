@@ -674,8 +674,9 @@ pub fn render(request: &ExportRequest, mut reporter: Reporter<'_>) -> Result<Str
         audio::mux(&silent, &mixed, &output).map_err(|error| error.to_string())
     })();
 
-    let _ = std::fs::remove_file(&silent);
-    let _ = std::fs::remove_file(&mixed);
+    // DEBUG: keep intermediate files for inspection
+    // let _ = std::fs::remove_file(&silent);
+    // let _ = std::fs::remove_file(&mixed);
 
     result.map(|()| output.to_string_lossy().into_owned())
 }
