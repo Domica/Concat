@@ -696,7 +696,7 @@ pub fn mux(video: &Path, audio: &Path, output: &Path) -> Result<()> {
     // soundtrack died at exactly 30/46.9 of the picture. `write_interleaved`
     // still does the final ordering; feeding it in order keeps its buffer
     // small. The file ends with the shorter input, as `-shortest`.
-    let mut next_packet = |input: &mut ffmpeg::format::context::Input,
+    let next_packet = |input: &mut ffmpeg::format::context::Input,
                            wanted: usize,
                            from: ffmpeg::Rational,
                            to: ffmpeg::Rational,
@@ -751,14 +751,14 @@ pub fn mux(video: &Path, audio: &Path, output: &Path) -> Result<()> {
             (None, None) => break,
         };
         if take_video {
-            let mut packet = video_packet.take().expect("checked above");
+            let packet = video_packet.take().expect("checked above");
             packet
                 .write_interleaved(&mut out)
                 .map_err(|error| ffi::fail("write packet", output, error))?;
             video_packet =
                 next_packet(&mut video_in, video_index, video_tb, out_video_tb, 0, video)?;
         } else {
-            let mut packet = audio_packet.take().expect("checked above");
+            let packet = audio_packet.take().expect("checked above");
             packet
                 .write_interleaved(&mut out)
                 .map_err(|error| ffi::fail("write packet", output, error))?;
