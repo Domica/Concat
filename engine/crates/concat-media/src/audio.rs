@@ -697,11 +697,11 @@ pub fn mux(video: &Path, audio: &Path, output: &Path) -> Result<()> {
     // still does the final ordering; feeding it in order keeps its buffer
     // small. The file ends with the shorter input, as `-shortest`.
     let next_packet = |input: &mut ffmpeg::format::context::Input,
-                           wanted: usize,
-                           from: ffmpeg::Rational,
-                           to: ffmpeg::Rational,
-                           stream: usize,
-                           path: &Path|
+                       wanted: usize,
+                       from: ffmpeg::Rational,
+                       to: ffmpeg::Rational,
+                       stream: usize,
+                       path: &Path|
      -> Result<Option<ffmpeg::Packet>> {
         loop {
             let mut packet = ffmpeg::Packet::empty();
