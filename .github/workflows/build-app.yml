@@ -1,117 +1,33 @@
 name: Build app
 
-# Builds Concat - the Slint window, `engine/crates/concat` - for every
-# platform and architecture it ships on, each on a runner of that
-# architecture so nothing is cross-compiled, and uploads one artifact per
-# target:
-#
-#   macOS    arm64 (Apple silicon)   x86_64 (Intel)     -> Concat.dmg
-#   Linux    x86_64                  aarch64            -> Concat-*.tar.gz
-#   Windows  x86_64                  aarch64            -> Concat-*.zip
-#
-# Reusable: nightly.yml calls it on every push to main, release.yml on every
-# tag. It is the one place the build environment is described:
-#
-# - The engine links FFmpeg and compiles whisper.cpp in, so a build needs the
-#   FFmpeg 7+ development libraries (headers and import libraries), cmake, a
-#   C++ toolchain and libclang for bindgen. sherpa-onnx is a prebuilt static
-#   library its crate downloads for the target.
-# - Homebrew's FFmpeg serves on macOS and travels with the app: the dylibs
-#   are copied into the bundle and the binary's load paths rewritten, so the
-#   .dmg runs on a Mac with nothing installed. Windows and Linux use a BtbN
-#   `shared` build - headers, import libraries and runtime libraries in one
-#   archive - and the runtime libraries ship beside the binary; on Linux the
-#   binary carries an rpath to find them there.
-# - The app is signed and notarised on macOS when the signing secrets are
-#   set on the repository, and ad-hoc signed when they are not, so a build
-#   from a fork still opens (with Gatekeeper's warning).
-#
-# The six targets are a matrix so one fails without taking the rest down;
-# `fail-fast` is off for the same reason.
+# Builds Concat - the Slint window, `engine/crates/concat` - for Windows x64.
+# Reusable: nightly.yml calls it on every push to main, release.yml on every tag.
 on:
   workflow_call:
     secrets:
       APPLE_CERTIFICATE_P12:
-        description: Base64 of a Developer ID Application .p12
         required: false
       APPLE_CERTIFICATE_PASSWORD:
         required: false
       APPLE_SIGNING_IDENTITY:
-        description: "The identity to sign with, e.g. Developer ID Application: Name (TEAMID)"
         required: false
       APPLE_ID:
         required: false
       APPLE_TEAM_ID:
         required: false
       APPLE_APP_PASSWORD:
-        description: An app-specific password for notarytool
         required: false
 
 env:
   CARGO_TERM_COLOR: always
-  # BtbN's autobuilds: GPL (x264 in), shared, FFmpeg 8.1, one per arch.
   FFMPEG_RELEASE: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest
   FFMPEG_VERSION: 8.1
-  # Oldest macOS the bundles run on. Apple silicon Macs all run newer than
-  # this; it is the Intel floor.
-  MACOSX_DEPLOYMENT_TARGET: "12.0"
-  # ggml (whisper.cpp's kernels) tunes itself to the machine it is built
-  # on unless told otherwise, and these bundles run on other machines: a
-  # runner with AVX-512 or SVE would leave a binary that faults on a CPU
-  # without them. Off, ggml compiles to the portable baseline instead -
-  # AVX2 with FMA and F16C on x86_64, NEON on ARM. whisper-rs-sys forwards
-  # every GGML_* variable to CMake as a define.
   GGML_NATIVE: "OFF"
 
 jobs:
   app:
-    name: ${{ matrix.platform }}-${{ matrix.arch }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # `ffmpeg` and `sherpa` name the target the way each project's
-          # release archives do.
-          - platform: macos
-            arch: arm64
-            os: macos-15
-            target: aarch64-apple-darwin
-            sherpa: osx-arm64
-          - platform: macos
-            arch: x86_64
-            os: macos-15-intel
-            target: x86_64-apple-darwin
-            sherpa: osx-x64
-          # 22.04, not latest: the binary links the build machine's glibc,
-          # so the oldest supported runner is what keeps it runnable on
-          # older distributions.
-          - platform: linux
-            arch: x86_64
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            ffmpeg: linux64
-            sherpa: linux-x64
-          - platform: linux
-            arch: aarch64
-            os: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-gnu
-            ffmpeg: linuxarm64
-            sherpa: linux-aarch64
-          - platform: windows
-            arch: x86_64
-            os: windows-2022
-            target: x86_64-pc-windows-msvc
-            ffmpeg: win64
-            sherpa: win-x64
-          - platform: windows
-            arch: aarch64
-            os: windows-11-arm
-            target: aarch64-pc-windows-msvc
-            ffmpeg: winarm64
-            sherpa: win-arm64
-    runs-on: ${{ matrix.os }}
-    # The slowest target (Intel macOS, fat LTO) finishes in under half an
-    # hour. A job still running past this is stuck, not slow.
+    name: windows-x86_64
+    runs-on: windows-2022
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
@@ -123,152 +39,28 @@ jobs:
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' engine/Cargo.toml | head -1)
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Building Concat $version for ${{ matrix.target }}"
+          echo "Building Concat $version for x86_64-pc-windows-msvc"
 
-      # ── Linux ──────────────────────────────────────────────────────────
-      # Slint's Skia renderer links fontconfig and freetype; cpal links
-      # ALSA; bindgen needs libclang; whisper.cpp is built by cmake; the
-      # file dialogs link GTK.
-      - name: System libraries (Linux)
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libfontconfig1-dev libfreetype6-dev libxkbcommon-dev libgl1-mesa-dev \
-            libgtk-3-dev libasound2-dev libclang-dev cmake
-
-      # Ubuntu's packaged FFmpeg is older than the 7 the engine needs.
-      - name: FFmpeg development libraries (Linux)
-        if: matrix.platform == 'linux'
-        run: |
-          set -euo pipefail
-          url="$FFMPEG_RELEASE/ffmpeg-n$FFMPEG_VERSION-latest-${{ matrix.ffmpeg }}-gpl-shared-$FFMPEG_VERSION.tar.xz"
-          curl -fsSL --retry 5 --retry-all-errors -o ffmpeg.tar.xz "$url"
-          mkdir -p ffmpeg-dev
-          tar -xf ffmpeg.tar.xz -C ffmpeg-dev --strip-components=1
-          {
-            echo "FFMPEG_DIR=$PWD/ffmpeg-dev"
-            echo "LD_LIBRARY_PATH=$PWD/ffmpeg-dev/lib"
-            # The shipped binary finds the libraries beside itself, in lib/.
-            # --disable-new-dtags makes that an old-style DT_RPATH, which is
-            # consulted for *every* object in the process - DT_RUNPATH is
-            # not transitive, so libavformat's own load of libavcodec would
-            # ignore it and the staged binary would not stand alone.
-            echo "RUSTFLAGS=-C link-arg=-Wl,-rpath,\$ORIGIN/lib -C link-arg=-Wl,--disable-new-dtags"
-          } >> "$GITHUB_ENV"
-
-      # ── macOS ──────────────────────────────────────────────────────────
-      # FFMPEG_DIR, same as the other platforms: ffmpeg-sys honours it ahead
-      # of every fallback, so the build never depends on the runner image
-      # happening to carry a pkg-config that knows about Homebrew - the
-      # arm64 image did not, and the build died in the pkg-config fallback.
-      - name: FFmpeg development libraries (macOS)
-        if: matrix.platform == 'macos'
-        run: |
-          set -euo pipefail
-          brew install ffmpeg cmake dylibbundler
-          echo "FFMPEG_DIR=$(brew --prefix ffmpeg)" >> "$GITHUB_ENV"
-          # ggml's Metal code asks `@available(macOS 15, *)` before using
-          # residency sets. Below that deployment target the question is
-          # answered at run time by ___isPlatformVersionAtLeast, which lives
-          # in clang's compiler-rt - and rustc links with -nodefaultlibs, so
-          # nothing pulls that archive in. Name it on the link line. (A
-          # build on a developer's Mac never sees this: with no deployment
-          # target set, the check is folded away at compile time.)
-          echo "RUSTFLAGS=-C link-arg=$(xcrun clang --print-file-name=libclang_rt.osx.a)" >> "$GITHUB_ENV"
-
-      # ── Windows ────────────────────────────────────────────────────────
-      # LLVM: libclang for bindgen on both architectures, and the C/C++
-      # compiler on arm64. Chocolatey's LLVM is x64; the arm64 runner takes
-      # LLVM's own Windows-on-Arm installer. The BtbN zip unpacks to one
-      # top-level folder.
-      #
-      # On arm64 the whole C side is compiled by clang-cl rather than cl:
-      # ggml refuses MSVC for ARM outright (its NEON kernels need clang),
-      # and ring picks clang there on its own. clang-cl speaks cl's command
-      # line and links against the same CRT, so the objects mix with the
-      # rest of the build; the cc crate hands it the Visual Studio
-      # environment, and the cmake crate passes it to CMake - but only
-      # under a Ninja generator, since the Visual Studio generator chooses
-      # the compiler itself. Ninja ships on the runner image. Under Ninja
-      # the cmake crate also writes CMAKE_CXX_FLAGS itself, in place of
-      # CMake's defaults, and those defaults are where /EHsc came from;
-      # clang-cl, unlike cl, rejects `try` outright without it (ggml's
-      # gguf reader uses exceptions). CXXFLAGS travels through the cc
-      # crate into those flags - spelt with a dash, because the build
-      # step runs under Git's bash, whose MSYS layer rewrites a value
-      # that starts with a slash into a Windows path.
       - name: FFmpeg development libraries (Windows)
-        if: matrix.platform == 'windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          if ("${{ matrix.arch }}" -eq "aarch64") {
-            $llvm = "21.1.0"
-            curl.exe -fsSL --retry 5 --retry-all-errors -o llvm.exe "https://github.com/llvm/llvm-project/releases/download/llvmorg-$llvm/LLVM-$llvm-woa64.exe"
-            Start-Process -Wait -FilePath .\llvm.exe -ArgumentList "/S"
-            "CC=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "CXX=clang-cl" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "CXXFLAGS=-EHsc" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "CMAKE_GENERATOR=Ninja" | Out-File -FilePath $env:GITHUB_ENV -Append
-          } else {
-            choco install llvm -y --no-progress
-          }
+          choco install llvm -y --no-progress
           "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
           "LIBCLANG_PATH=C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_ENV -Append
-          $url = "$env:FFMPEG_RELEASE/ffmpeg-n$env:FFMPEG_VERSION-latest-${{ matrix.ffmpeg }}-gpl-shared-$env:FFMPEG_VERSION.zip"
+          $url = "$env:FFMPEG_RELEASE/ffmpeg-n$env:FFMPEG_VERSION-latest-win64-gpl-shared-$env:FFMPEG_VERSION.zip"
           curl.exe -fsSL --retry 5 --retry-all-errors -o ffmpeg-win.zip "$url"
           Expand-Archive ffmpeg-win.zip -DestinationPath ffdl
           $dir = (Get-ChildItem ffdl -Directory | Select-Object -First 1).FullName
           "FFMPEG_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append
           "$dir\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      # ── sherpa-onnx ────────────────────────────────────────────────────
-      # The prebuilt library the sys crate would otherwise fetch for
-      # itself, fetched here instead and handed over through
-      # SHERPA_ONNX_LIB_DIR. Left to the crate, the download lands inside
-      # target/, where rust-cache's cleanup does not keep it; a restored
-      # cache then replays the build script's answer without the files
-      # it points at, and the crate fails to link the moment anything
-      # makes it recompile. Outside target/, the files are there on every
-      # run. The version is the one the lockfile resolved, so a bump
-      # cannot desynchronise.
-      - name: sherpa-onnx static libraries (macOS and Linux)
-        if: matrix.platform != 'windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-          version=$(grep -A1 'name = "sherpa-onnx-sys"' engine/Cargo.lock | sed -n 's/^version = "\(.*\)"/\1/p')
-          stem="sherpa-onnx-v$version-${{ matrix.sherpa }}-static-lib"
-          echo "Downloading $stem"
-          curl -fsSL --retry 5 --retry-all-errors -o sherpa.tar.bz2 "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$version/$stem.tar.bz2"
-          mkdir -p sherpa
-          tar -xjf sherpa.tar.bz2 -C sherpa
-          test -d "sherpa/$stem/lib"
-          echo "SHERPA_ONNX_LIB_DIR=$PWD/sherpa/$stem/lib" >> "$GITHUB_ENV"
-
-      # On Windows it links shared (see concat-speech's manifest for why
-      # static cannot work there), from a directory holding only the
-      # import libraries. The separation matters: when the sys crate's
-      # build script sees DLLs beside the .lib files it tries to copy them
-      # into the "profile directory", located by searching OUT_DIR's
-      # ancestors for one named after $PROFILE - which panics under the
-      # custom `app` profile, whose directory is not called "release". The
-      # DLLs are kept apart and the packaging step ships them beside the
-      # binary.
-      #
-      # The archive is .tar.bz2, and Windows' own tar has no bzip2 of its
-      # own: it pipes through an external decoder, and on the x64 image
-      # that pipe can hang without a word. Python's tarfile unpacks it
-      # in-process. Each command announces itself, so a stall would name
-      # the culprit.
       - name: sherpa-onnx shared libraries (Windows)
-        if: matrix.platform == 'windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           $version = (Select-String -Path engine\Cargo.lock -Pattern 'name = "sherpa-onnx-sys"' -Context 0,1).Context.PostContext[0] -replace '.*"(.*)".*', '$1'
-          $stem = "sherpa-onnx-v$version-${{ matrix.sherpa }}-shared-MT-Release-lib"
+          $stem = "sherpa-onnx-v$version-win-x64-shared-MT-Release-lib"
           Write-Host "Downloading $stem"
           curl.exe -fsSL --retry 5 --retry-all-errors -o sherpa.tar.bz2 "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$version/$stem.tar.bz2"
           Write-Host "Unpacking"
@@ -280,30 +72,25 @@ jobs:
           "SHERPA_ONNX_LIB_DIR=$PWD\sherpa-libs" | Out-File -FilePath $env:GITHUB_ENV -Append
           "SHERPA_DLL_DIR=$PWD\sherpa-dlls" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      # ── Build ──────────────────────────────────────────────────────────
-      # The cache comes after the environment is set, not before: its key
-      # is made from the compiler and linker variables in force (RUSTFLAGS,
-      # CC, CXX, CMAKE_*, and GGML_* added to the default set), so a change
-      # to any of them is a new key rather than a stale target/ served
-      # under the old one.
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: engine
-          key: ${{ matrix.target }}
+          key: x86_64-pc-windows-msvc
           env-vars: CARGO CC CFLAGS CXX CMAKE RUST GGML
 
-      # The shipping profile: fat LTO, panic=abort, stripped. See the
-      # workspace Cargo.toml for what each knob costs.
-      #
-      # Bash on every platform, teed to a log: raw job logs need a login to
-      # read, but the step summary is public - so on failure the tail of the
-      # build goes there, and a red run explains itself to anyone.
+      # Slint's build script recurses deep and overflows the 1 MB stack the
+      # MSVC linker reserves by default. /STACK raises the reserve in the PE
+      # header of everything linked here - including build scripts. No
+      # --target flag on purpose: with it, RUSTFLAGS would skip build scripts.
       - name: Build
-        shell: bash
+        shell: pwsh
         working-directory: engine
+        env:
+          RUSTFLAGS: -C link-arg=/STACK:16777216
         run: |
-          set -o pipefail
-          cargo build --profile app -p concat --target ${{ matrix.target }} 2>&1 | tee build.log
+          $ErrorActionPreference = "Stop"
+          cargo build --profile app -p concat 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build log to the summary (failure only)
         if: failure()
@@ -311,184 +98,23 @@ jobs:
         run: |
           if [ -f engine/build.log ]; then
             {
-              echo "### Build failed: ${{ matrix.target }}"
+              echo "### Build failed: x86_64-pc-windows-msvc"
               echo '```'
               tail -n 150 engine/build.log
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # ── Package: macOS ─────────────────────────────────────────────────
-      # An .app bundle: the binary, an icon set made from the repository's
-      # PNGs, an Info.plist, and every FFmpeg dylib the binary loads copied
-      # into Frameworks with its load path rewritten, so the bundle depends
-      # on nothing installed.
-      - name: Bundle (macOS)
-        if: matrix.platform == 'macos'
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          app=Concat.app
-          rm -rf "$app"
-          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
-          cp "engine/target/${{ matrix.target }}/app/concat" "$app/Contents/MacOS/concat"
-
-          # The icon set Apple wants: each size and its @2x twin.
-          iconset=Concat.iconset
-          rm -rf "$iconset"; mkdir "$iconset"
-          icons=assets/icons
-          cp "$icons/concat_logo_16.png"  "$iconset/icon_16x16.png"
-          cp "$icons/concat_logo_32.png"  "$iconset/icon_16x16@2x.png"
-          cp "$icons/concat_logo_32.png"  "$iconset/icon_32x32.png"
-          cp "$icons/concat_logo_64.png"  "$iconset/icon_32x32@2x.png"
-          cp "$icons/concat_logo_128.png" "$iconset/icon_128x128.png"
-          cp "$icons/concat_logo_256.png" "$iconset/icon_128x128@2x.png"
-          cp "$icons/concat_logo_256.png" "$iconset/icon_256x256.png"
-          cp "$icons/concat_logo_512.png" "$iconset/icon_256x256@2x.png"
-          cp "$icons/concat_logo_512.png" "$iconset/icon_512x512.png"
-          iconutil -c icns "$iconset" -o "$app/Contents/Resources/Concat.icns"
-
-          cat > "$app/Contents/Info.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleName</key><string>Concat</string>
-            <key>CFBundleDisplayName</key><string>Concat</string>
-            <key>CFBundleIdentifier</key><string>app.concat.editor</string>
-            <key>CFBundleVersion</key><string>${VERSION}</string>
-            <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-            <key>CFBundleExecutable</key><string>concat</string>
-            <key>CFBundleIconFile</key><string>Concat</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>LSMinimumSystemVersion</key><string>${MACOSX_DEPLOYMENT_TARGET}</string>
-            <key>NSHighResolutionCapable</key><true/>
-            <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
-            <key>LSApplicationCategoryType</key><string>public.app-category.video</string>
-            <key>NSHumanReadableCopyright</key><string>AGPL-3.0-or-later. See THIRD_PARTY_NOTICES.md.</string>
-          </dict>
-          </plist>
-          PLIST
-
-          # Every non-system dylib the binary (and those dylibs) load, copied
-          # in and re-pointed at @executable_path/../Frameworks.
-          dylibbundler -od -b \
-            -x "$app/Contents/MacOS/concat" \
-            -d "$app/Contents/Frameworks" \
-            -p @executable_path/../Frameworks
-
-          # Nothing outside the bundle may remain: a load path into
-          # Homebrew would break on a Mac without it.
-          if otool -L "$app/Contents/MacOS/concat" | grep -E '/opt/homebrew|/usr/local' ; then
-            echo "the binary still loads libraries from outside the bundle" >&2
-            exit 1
-          fi
-
-      # Signed with the repository's Developer ID when it has one, and
-      # notarised so Gatekeeper opens it without a warning; ad-hoc signed
-      # otherwise, which is what a fork's build gets. Either way the
-      # bundle carries a signature, which macOS insists on for arm64.
-      - name: Sign and notarise (macOS)
-        if: matrix.platform == 'macos'
-        env:
-          CERT_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
-          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          app=Concat.app
-          dmg="Concat-${VERSION}-macos-${{ matrix.arch }}.dmg"
-          if [ -n "${CERT_P12}" ] && [ -n "${IDENTITY}" ]; then
-            keychain=$RUNNER_TEMP/signing.keychain-db
-            echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-            security create-keychain -p "" "$keychain"
-            security set-keychain-settings -lut 21600 "$keychain"
-            security unlock-keychain -p "" "$keychain"
-            security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
-            security set-key-partition-list -S apple-tool:,apple: -s -k "" "$keychain"
-            security list-keychains -d user -s "$keychain" login.keychain-db
-            # Frameworks first, then the executable, then the bundle: each
-            # signature covers what is beneath it.
-            find "$app/Contents/Frameworks" -name '*.dylib' -exec \
-              codesign --force --options runtime --timestamp -s "$IDENTITY" {} \;
-            codesign --force --options runtime --timestamp -s "$IDENTITY" "$app/Contents/MacOS/concat"
-            codesign --force --options runtime --timestamp -s "$IDENTITY" "$app"
-            codesign --verify --deep --strict "$app"
-          else
-            echo "No signing identity: ad-hoc signing."
-            codesign --force --deep -s - "$app"
-          fi
-
-          hdiutil create -volname Concat -srcfolder "$app" -ov -format UDZO "$dmg"
-
-          if [ -n "${APPLE_ID}" ] && [ -n "${TEAM_ID}" ] && [ -n "${APP_PASSWORD}" ] && [ -n "${IDENTITY}" ]; then
-            codesign --force --timestamp -s "$IDENTITY" "$dmg"
-            xcrun notarytool submit "$dmg" --apple-id "$APPLE_ID" --team-id "$TEAM_ID" \
-              --password "$APP_PASSWORD" --wait
-            xcrun stapler staple "$dmg"
-          fi
-          mkdir -p stage && mv "$dmg" stage/
-
-      # ── Package: Linux ─────────────────────────────────────────────────
-      # The binary, the FFmpeg runtime libraries it loads from lib/ beside
-      # it (the rpath above), a desktop entry and an icon, in one folder.
-      - name: Stage (Linux)
-        if: matrix.platform == 'linux'
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          name="Concat-${VERSION}-linux-${{ matrix.arch }}"
-          mkdir -p "stage/$name/lib"
-          cp "engine/target/${{ matrix.target }}/app/concat" "stage/$name/concat"
-          cp -a ffmpeg-dev/lib/*.so* "stage/$name/lib/"
-          cp assets/icons/concat_logo_256.png "stage/$name/concat.png"
-          cat > "stage/$name/concat.desktop" <<DESKTOP
-          [Desktop Entry]
-          Type=Application
-          Name=Concat
-          Comment=Video editor
-          Exec=concat
-          Icon=concat
-          Categories=AudioVideo;Video;
-          Terminal=false
-          DESKTOP
-          cp LICENSE THIRD_PARTY_NOTICES.md "stage/$name/"
-          # The binary must resolve every library from the folder alone.
-          # The whole ldd report goes to the public summary when it does
-          # not, so the failure names the library instead of just a step.
-          report=$(env -u LD_LIBRARY_PATH ldd "stage/$name/concat" || true)
-          if grep -i 'not found' <<<"$report"; then
-            {
-              echo "### Unresolved libraries: ${{ matrix.target }}"
-              echo '```'
-              echo "$report"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "$report"
-            echo "the binary does not resolve every library from its own folder" >&2
-            exit 1
-          fi
-          (cd stage && tar -czf "$name.tar.gz" "$name" && rm -r "$name")
-
-      # ── Package: Windows ───────────────────────────────────────────────
       - name: Stage (Windows)
-        if: matrix.platform == 'windows'
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           $ErrorActionPreference = "Stop"
-          $name = "Concat-$env:VERSION-windows-${{ matrix.arch }}"
+          $name = "Concat-$env:VERSION-windows-x86_64"
           New-Item -ItemType Directory -Force "stage\$name" | Out-Null
-          Copy-Item "engine\target\${{ matrix.target }}\app\concat.exe" "stage\$name\"
+          Copy-Item "engine\target\app\concat.exe" "stage\$name\"
           Copy-Item "$env:FFMPEG_DIR\bin\*.dll" "stage\$name\"
-          # The sherpa-onnx runtime, set aside by the download step above.
           Copy-Item "$env:SHERPA_DLL_DIR\*.dll" "stage\$name\"
           Copy-Item LICENSE, THIRD_PARTY_NOTICES.md "stage\$name\"
           Compress-Archive -Path "stage\$name" -DestinationPath "stage\$name.zip"
@@ -496,6 +122,6 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: Concat-${{ matrix.platform }}-${{ matrix.arch }}
+          name: Concat-windows-x86_64
           path: stage/*
           if-no-files-found: error

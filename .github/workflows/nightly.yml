@@ -34,7 +34,9 @@ jobs:
 
   publish:
     name: Refresh the nightly release
-    needs: [build, phones]
+    # Only wait for desktop builds. Phones can fail independently (missing
+    # signing credentials on forks) without blocking the release.
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
