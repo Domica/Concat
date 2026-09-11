@@ -4904,13 +4904,11 @@ impl Studio {
             self.export.name.trim()
         );
         let encoder = std::env::var("CONCAT_ENCODER").unwrap_or_else(|_| "libx264".to_owned());
-        let preset = std::env::var("CONCAT_PRESET").unwrap_or_else(|_| "veryfast".to_owned());
-        eprintln!("Export: using encoder={} preset={}", encoder, preset);
+        eprintln!("Export: using encoder={}", encoder);
         let spec = ExportSpec {
             output: output.clone(),
             crf: EXPORT_CRF[self.export.quality.min(2)],
             preset: "veryfast".into(),
-            preset: preset.into(),
             encoder: encoder.into(),
         };
         let (frame_w, frame_h) = self.output_size();
