@@ -4733,7 +4733,7 @@ impl Studio {
                 // Check for missing media
                 let missing = session.project().missing_media();
                 if !missing.is_empty() {
-                    let log_path = std::path::Path::new(&session.path)
+                    let log_path = std::path::Path::new(&session.path())
                         .join("cache")
                         .join("missing_media.log");
                     if let Ok(mut file) = std::fs::File::create(&log_path) {
