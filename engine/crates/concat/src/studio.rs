@@ -4733,9 +4733,15 @@ impl Studio {
                 // Check for missing media
                 let missing = session.project().missing_media();
                 if !missing.is_empty() {
-                    eprintln!("concat: {} media files missing:", missing.len());
-                    for m in &missing {
-                        eprintln!("  - {} ({})", m.name, m.path);
+                    let log_path = std::path::Path::new(&session.path)
+                        .join("cache")
+                        .join("missing_media.log");
+                    if let Ok(mut file) = std::fs::File::create(&log_path) {
+                        use std::io::Write;
+                        let _ = writeln!(file, "concat: {} media files missing:", missing.len());
+                        for m in &missing {
+                            let _ = writeln!(file, "  - {} ({})", m.name, m.path);
+                        }
                     }
                 }
 
