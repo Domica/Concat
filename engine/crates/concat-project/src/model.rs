@@ -1200,6 +1200,15 @@ pub struct Project {
     pub active_timeline_id: String,
 }
 
+
+/// A media reference that points to a non-existent file.
+#[derive(Clone, Debug)]
+pub struct MissingMedia {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+}
+
 impl Project {
     /// A new project: one timeline, four lanes, at the default frame.
     pub fn new() -> Self {
@@ -1302,5 +1311,20 @@ impl Timeline {
             .iter()
             .map(|clip| clip.start + clip.duration)
             .fold(0.0, f64::max)
+    }
+}
+
+impl Project {
+    /// Returns media items whose paths do not exist on disk.
+    pub fn missing_media(&self) -> Vec<MissingMedia> {
+        self.media
+            .iter()
+            .filter(|m| !std::path::Path::new(&m.path).exists())
+            .map(|m| MissingMedia {
+                id: m.id.clone(),
+                name: m.name.clone(),
+                path: m.path.clone(),
+            })
+            .collect()
     }
 }
