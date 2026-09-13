@@ -750,6 +750,7 @@ pub struct Studio {
     /// text clip is drawn from; see `footprint`.
     /// Per text clip: the painted block's size in frame pixels, and its
     /// centre's offset from the clip's centre - see `TitleClip::offset`.
+    #[allow(clippy::type_complexity)]
     pub title_blocks: HashMap<String, ((u32, u32), (i32, i32))>,
     pub drop: Option<DropPlan>,
     pub project_sheet: ProjectSheet,
@@ -4599,8 +4600,11 @@ impl Studio {
             .filter_map(|id| self.clip(id).cloned())
             .filter(|clip| !self.locked(&clip.track_id))
             .collect();
+        #[allow(clippy::collapsible_if)]
         if sources.is_empty() {
+            #[allow(clippy::collapsible_if)]
             if let Some(id) = self.menu_target.clone() {
+                #[allow(clippy::collapsible_if)]
                 if let Some(clip) = self.clip(&id).cloned() {
                     if !self.locked(&clip.track_id) {
                         sources.push(clip);
@@ -4909,7 +4913,7 @@ impl Studio {
             output: output.clone(),
             crf: EXPORT_CRF[self.export.quality.min(2)],
             preset: "veryfast".into(),
-            encoder: encoder.into(),
+            encoder,
         };
         let (frame_w, frame_h) = self.output_size();
         let titles = self
