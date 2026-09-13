@@ -1200,7 +1200,6 @@ pub struct Project {
     pub active_timeline_id: String,
 }
 
-
 /// A media reference that points to a non-existent file.
 #[derive(Clone, Debug)]
 pub struct MissingMedia {
