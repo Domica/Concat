@@ -1085,6 +1085,7 @@ pub fn run() -> Result<(), slint::PlatformError> {
                         }
                         "template" => state.save_template(),
                         "speech" => state.speech_open(),
+                        "clear-cache" => state.clear_project_cache(),
                         "settings" => {
                             state.refresh_models();
                             state.settings.open = true;
