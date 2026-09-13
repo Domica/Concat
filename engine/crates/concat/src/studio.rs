@@ -4798,6 +4798,23 @@ impl Studio {
         }
     }
 
+    /// Clears all cached artwork and waveforms from the current project.
+    pub fn clear_project_cache(&mut self) {
+        if let Some(session) = &self.session {
+            match concat_host::projects::clear_cache(&session.path) {
+                Ok(count) => {
+                    eprintln!("concat: cleared {} cache files", count);
+                    // Refresh UI
+                    self.request_media_art();
+                    self.request_preview();
+                }
+                Err(error) => {
+                    eprintln!("concat: cache clear failed: {error}");
+                }
+            }
+        }
+    }
+
     pub fn forget_recent(&mut self, path: &str) {
         if let Err(error) = projects::forget(&self.host.dirs.config, path) {
             self.start.error = error;
