@@ -1203,8 +1203,11 @@ pub struct Project {
 /// A media reference that points to a non-existent file.
 #[derive(Clone, Debug)]
 pub struct MissingMedia {
+    /// The media item's stable id (e.g. "m1", "m2").
     pub id: String,
+    /// Display name in the bin.
     pub name: String,
+    /// The absolute path that no longer exists on disk.
     pub path: String,
 }
 

@@ -385,20 +385,17 @@ mod tests {
     }
 }
 
-
 /// Removes all cached artwork and waveforms from a project folder.
 pub fn clear_cache(path: &str) -> Result<usize, String> {
     let root = Path::new(path);
     let cache_dir = root.join("cache");
-    
+
     if !cache_dir.exists() {
         return Ok(0);
     }
-    
+
     let mut count = 0;
-    for entry in std::fs::read_dir(&cache_dir)
-        .map_err(|e| format!("cannot read cache: {e}"))?
-    {
+    for entry in std::fs::read_dir(&cache_dir).map_err(|e| format!("cannot read cache: {e}"))? {
         let entry = entry.map_err(|e| format!("cannot read entry: {e}"))?;
         if std::fs::remove_file(entry.path()).is_ok() {
             count += 1;

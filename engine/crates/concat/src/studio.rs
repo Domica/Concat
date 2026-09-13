@@ -4807,7 +4807,7 @@ impl Studio {
     /// Clears all cached artwork and waveforms from the current project.
     pub fn clear_project_cache(&mut self) {
         if let Some(session) = &self.session {
-            match concat_host::projects::clear_cache(&session.path) {
+            match concat_host::projects::clear_cache(&session.path()) {
                 Ok(count) => {
                     eprintln!("concat: cleared {} cache files", count);
                     // Refresh UI
