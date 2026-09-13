@@ -4729,6 +4729,16 @@ impl Studio {
                 if let Err(error) = projects::remember(&self.host.dirs.config, &info) {
                     eprintln!("concat: {error}");
                 }
+
+                // Check for missing media
+                let missing = session.project().missing_media();
+                if !missing.is_empty() {
+                    eprintln!("concat: {} media files missing:", missing.len());
+                    for m in &missing {
+                        eprintln!("  - {} ({})", m.name, m.path);
+                    }
+                }
+
                 self.pause();
                 self.session = Some(session);
                 self.echo = None;
