@@ -675,5 +675,11 @@
   "Water": "Water",
   "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.": "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.",
   "{0} channels": "{0} channels",
-  "{0} media file(s) not found": "{0} fichier(s) média introuvable(s)"
+  "{0} media file(s) not found": "{0} fichier(s) média introuvable(s)",
+  "Clear project cache": "Vider le cache du projet",
+  "Context menu": "Menu contextuel",
+  "Could not show the log: {0}": "Impossible d'afficher le journal : {0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "Afficher Retourner horizontalement, Retourner verticalement et Inverser dans le menu contextuel du clip. Les raccourcis clavier (H, J, R) fonctionnent toujours.",
+  "Show advanced actions": "Afficher les actions avancées",
+  "Show the log": "Afficher le journal"
 }

@@ -675,5 +675,11 @@
   "Water": "Water",
   "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.": "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.",
   "{0} channels": "{0} channels",
-  "{0} media file(s) not found": "{0} 個のメディアファイルが見つかりません"
+  "{0} media file(s) not found": "{0} 個のメディアファイルが見つかりません",
+  "Clear project cache": "プロジェクトキャッシュをクリア",
+  "Context menu": "コンテキストメニュー",
+  "Could not show the log: {0}": "ログを表示できませんでした: {0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "クリップのコンテキストメニューに「水平反転」「垂直反転」「逆再生」を表示します。キーボードショートカット（H、J、R）は常に機能します。",
+  "Show advanced actions": "詳細なアクションを表示",
+  "Show the log": "ログを表示"
 }

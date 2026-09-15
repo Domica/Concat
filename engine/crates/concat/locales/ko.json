@@ -675,5 +675,11 @@
   "Water": "Water",
   "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.": "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.",
   "{0} channels": "{0} channels",
-  "{0} media file(s) not found": "미디어 파일 {0}개를 찾을 수 없음"
+  "{0} media file(s) not found": "미디어 파일 {0}개를 찾을 수 없음",
+  "Clear project cache": "프로젝트 캐시 지우기",
+  "Context menu": "컨텍스트 메뉴",
+  "Could not show the log: {0}": "로그를 표시할 수 없습니다: {0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "클립 컨텍스트 메뉴에 수평 뒤집기, 수직 뒤집기 및 역재생을 표시합니다. 키보드 단축키(H, J, R)는 항상 작동합니다.",
+  "Show advanced actions": "고급 작업 표시",
+  "Show the log": "로그 표시"
 }

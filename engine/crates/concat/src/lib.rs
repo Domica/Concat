@@ -993,6 +993,13 @@ pub fn run() -> Result<(), slint::PlatformError> {
         let at = state.playhead;
         state.seek(at);
     }));
+    app.on_settings_custom_context_actions_changed(on_window!(|state, on: bool| {
+        state.prefs.custom_context_actions = on;
+        state.prefs.save(&state.host.dirs);
+        // Rebuild the context menu so the new rows appear / disappear
+        // without waiting for the next right-click to invalidate the cache.
+        state.menu_token += 1;
+    }));
     app.on_model_activated(on_window!(|state, id: SharedString| {
         state.model_activate(id.as_str());
     }));

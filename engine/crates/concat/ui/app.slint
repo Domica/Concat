@@ -364,6 +364,9 @@ export component App inherits Window {
             if (event.text == "s") { Editor.shortcut("split-selected"); return accept; }
             if (event.text == "n") { Editor.shortcut("snap"); return accept; }
             if (event.text == "m") { Editor.shortcut("mute"); return accept; }
+            if (event.text == "h") { Editor.shortcut("flip-h"); return accept; }
+            if (event.text == "j") { Editor.shortcut("flip-v"); return accept; }
+            if (event.text == "r") { Editor.shortcut("reverse"); return accept; }
             return reject;
         }
 

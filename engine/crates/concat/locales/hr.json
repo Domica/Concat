@@ -675,5 +675,11 @@
   "Select folder containing media files": "Select folder containing media files",
   "Sort: Added": "Sort: Added",
   "Sort: Name": "Sort: Name",
-  "Sort: Type": "Sort: Type"
+  "Sort: Type": "Sort: Type",
+  "Clear project cache": "Očisti predmemoriju projekta",
+  "Context menu": "Kontekstni izbornik",
+  "Could not show the log: {0}": "Nije moguće prikazati zapisnik: {0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "Prikaži Preokreni vodoravno, Preokreni okomito i Obrni u kontekstnom izborniku klipa. Tipkovnički prečaci (H, J, R) uvijek rade.",
+  "Show advanced actions": "Prikaži napredne radnje",
+  "Show the log": "Prikaži zapisnik"
 }
