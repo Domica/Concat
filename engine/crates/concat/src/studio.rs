@@ -7514,9 +7514,6 @@ impl Studio {
             self.apply(Command::Batch { commands });
         }
     }
-
-}
-
 }
 
 /// Longest a caption line gets before it is wrapped: about what two lines
