@@ -7733,3 +7733,4 @@ mod tests {
         assert!(box_.contains(x, 0.5 + 6.0 / 1080.0, FRAME));
         assert!(!box_.contains(x, 0.5 - 6.0 / 1080.0, FRAME));
     }
+}
