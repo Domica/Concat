@@ -7449,6 +7449,74 @@ impl Studio {
             index,
         });
     }
+    pub fn toggle_flip_h(&mut self) {
+        if self.selection.is_empty() {
+            return;
+        }
+        let commands: Vec<Command> = self
+            .selection
+            .iter()
+            .filter_map(|id| {
+                self.clip(id).map(|clip| Command::UpdateClip {
+                    clip_id: id.clone(),
+                    patch: ClipPatch {
+                        flip_h: Some(!clip.flip_h),
+                        ..Default::default()
+                    },
+                })
+            })
+            .collect();
+        if !commands.is_empty() {
+            self.apply(Command::Batch { commands });
+        }
+    }
+
+    pub fn toggle_flip_v(&mut self) {
+        if self.selection.is_empty() {
+            return;
+        }
+        let commands: Vec<Command> = self
+            .selection
+            .iter()
+            .filter_map(|id| {
+                self.clip(id).map(|clip| Command::UpdateClip {
+                    clip_id: id.clone(),
+                    patch: ClipPatch {
+                        flip_v: Some(!clip.flip_v),
+                        ..Default::default()
+                    },
+                })
+            })
+            .collect();
+        if !commands.is_empty() {
+            self.apply(Command::Batch { commands });
+        }
+    }
+
+    pub fn toggle_reverse(&mut self) {
+        if self.selection.is_empty() {
+            return;
+        }
+        let commands: Vec<Command> = self
+            .selection
+            .iter()
+            .filter_map(|id| {
+                self.clip(id).map(|clip| Command::UpdateClip {
+                    clip_id: id.clone(),
+                    patch: ClipPatch {
+                        reverse: Some(!clip.reverse),
+                        ..Default::default()
+                    },
+                })
+            })
+            .collect();
+        if !commands.is_empty() {
+            self.apply(Command::Batch { commands });
+        }
+    }
+
+}
+
 }
 
 /// Longest a caption line gets before it is wrapped: about what two lines
@@ -7668,70 +7736,3 @@ mod tests {
         assert!(box_.contains(x, 0.5 + 6.0 / 1080.0, FRAME));
         assert!(!box_.contains(x, 0.5 - 6.0 / 1080.0, FRAME));
     }
-    pub fn toggle_flip_h(&mut self) {
-        if self.selection.is_empty() {
-            return;
-        }
-        let commands: Vec<Command> = self
-            .selection
-            .iter()
-            .filter_map(|id| {
-                self.clip(id).map(|clip| Command::UpdateClip {
-                    clip_id: id.clone(),
-                    patch: ClipPatch {
-                        flip_h: Some(!clip.flip_h),
-                        ..Default::default()
-                    },
-                })
-            })
-            .collect();
-        if !commands.is_empty() {
-            self.apply(Command::Batch { commands });
-        }
-    }
-
-    pub fn toggle_flip_v(&mut self) {
-        if self.selection.is_empty() {
-            return;
-        }
-        let commands: Vec<Command> = self
-            .selection
-            .iter()
-            .filter_map(|id| {
-                self.clip(id).map(|clip| Command::UpdateClip {
-                    clip_id: id.clone(),
-                    patch: ClipPatch {
-                        flip_v: Some(!clip.flip_v),
-                        ..Default::default()
-                    },
-                })
-            })
-            .collect();
-        if !commands.is_empty() {
-            self.apply(Command::Batch { commands });
-        }
-    }
-
-    pub fn toggle_reverse(&mut self) {
-        if self.selection.is_empty() {
-            return;
-        }
-        let commands: Vec<Command> = self
-            .selection
-            .iter()
-            .filter_map(|id| {
-                self.clip(id).map(|clip| Command::UpdateClip {
-                    clip_id: id.clone(),
-                    patch: ClipPatch {
-                        reverse: Some(!clip.reverse),
-                        ..Default::default()
-                    },
-                })
-            })
-            .collect();
-        if !commands.is_empty() {
-            self.apply(Command::Batch { commands });
-        }
-    }
-
-}

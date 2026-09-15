@@ -232,6 +232,7 @@ pub fn run() -> Result<(), slint::PlatformError> {
         Shell::with(|shell, app| {
             shell.studio.borrow_mut().close_project();
             app.window().hide().ok();
+            slint::quit_event_loop().ok();
         });
     });
     // Maximised or not is read back on every resize rather than tracked:
@@ -1152,6 +1153,7 @@ pub fn run() -> Result<(), slint::PlatformError> {
                 if action == "close-window" {
                     shell.studio.borrow_mut().close_project();
                     app.window().hide().ok();
+                    slint::quit_event_loop().ok();
                     return;
                 }
                 shell.studio.borrow_mut().refresh_art();
