@@ -689,5 +689,8 @@
   "Sort: Name": "Sort: Name",
   "Sort: Type": "Sort: Type",
   "The following media files could not be located. You can relink them to a new folder or dismiss this dialog to continue with offline placeholders.": "找不到下列媒體檔案。您可以將它們重新連結到新資料夾，或關閉此對話方塊以離線佔位符繼續。",
-  "{0} media file(s) not found": "找不到 {0} 個媒體檔案"
+  "{0} media file(s) not found": "找不到 {0} 個媒體檔案",
+  "Clear project cache": "清除專案快取",
+  "Could not show the log: {0}": "無法顯示日誌：{0}",
+  "Show the log": "顯示日誌"
 }

@@ -689,5 +689,8 @@
   "Water": "Water",
   "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.": "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.",
   "{0} channels": "{0} channels",
-  "{0} media file(s) not found": "{0} 個のメディアファイルが見つかりません"
+  "{0} media file(s) not found": "{0} 個のメディアファイルが見つかりません",
+  "Clear project cache": "プロジェクトキャッシュをクリア",
+  "Could not show the log: {0}": "ログを表示できませんでした: {0}",
+  "Show the log": "ログを表示"
 }
