@@ -689,5 +689,11 @@
   "Water": "Water",
   "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.": "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.",
   "{0} channels": "{0} channels",
-  "{0} media file(s) not found": "{0} medya dosyası bulunamadı"
+  "{0} media file(s) not found": "{0} medya dosyası bulunamadı",
+  "Clear project cache": "Proje önbelleğini temizle",
+  "Context menu": "Bağlam menüsü",
+  "Could not show the log: {0}": "Günlük gösterilemedi: {0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "Klip bağlam menüsünde Yatay çevir, Dikey çevir ve Tersine çevir seçeneklerini göster. Klavye kısayolları (H, J, R) her zaman çalışır.",
+  "Show advanced actions": "Gelişmiş eylemleri göster",
+  "Show the log": "Günlüğü göster"
 }

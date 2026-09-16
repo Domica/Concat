@@ -34,11 +34,17 @@ pub struct Preferences {
     /// it is put. Off by default: a click past the last clip lands there, so
     /// a clip can be dropped at the playhead beyond everything else.
     pub playhead_stops_at_end: bool,
+<<<<<<< ours
     /// Where model downloads look first: a `SourcePreference` by name.
     /// Absent is automatic.
     pub download_source: Option<String>,
     /// The base URL a custom download source appends a model's file to.
     pub download_base: Option<String>,
+=======
+    /// Show flip horizontal, flip vertical, and reverse in the clip context
+    /// menu. Keyboard shortcuts (H, J, R) are always available.
+    pub custom_context_actions: bool,
+>>>>>>> theirs
 }
 
 impl Preferences {

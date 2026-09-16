@@ -189,8 +189,12 @@ export component App inherits Window {
     callback settings-language-changed(index: int);
     callback settings-theme-changed(dark: bool);
     callback settings-playhead-stops-changed(on: bool);
+<<<<<<< ours
     callback settings-download-source-changed(index: int);
     callback settings-download-base-edited(text: string);
+=======
+    callback settings-custom-context-actions-changed(on: bool);
+>>>>>>> theirs
     callback model-activated(id: string);
     callback model-download(id: string);
     callback model-cancel(id: string);
@@ -368,6 +372,9 @@ export component App inherits Window {
             if (event.text == "s") { Editor.shortcut("split-selected"); return accept; }
             if (event.text == "n") { Editor.shortcut("snap"); return accept; }
             if (event.text == "m") { Editor.shortcut("mute"); return accept; }
+            if (event.text == "h") { Editor.shortcut("flip-h"); return accept; }
+            if (event.text == "j") { Editor.shortcut("flip-v"); return accept; }
+            if (event.text == "r") { Editor.shortcut("reverse"); return accept; }
             return reject;
         }
 
@@ -481,8 +488,12 @@ export component App inherits Window {
         language-changed(index) => { root.settings-language-changed(index); }
         theme-changed(dark) => { root.settings-theme-changed(dark); }
         playhead-stops-changed(on) => { root.settings-playhead-stops-changed(on); }
+<<<<<<< ours
         download-source-changed(index) => { root.settings-download-source-changed(index); }
         download-base-edited(text) => { root.settings-download-base-edited(text); }
+=======
+        custom-context-actions-changed(on) => { root.settings-custom-context-actions-changed(on); }
+>>>>>>> theirs
         model-activated(id) => { root.model-activated(id); }
         model-download(id) => { root.model-download(id); }
         model-cancel(id) => { root.model-cancel(id); }

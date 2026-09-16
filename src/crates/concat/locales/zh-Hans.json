@@ -689,5 +689,11 @@
   "Water": "Water",
   "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.": "Water and sky turned aquamarine and brightened, sand and skin left warm and clean. The beach-day look creators reach for first.",
   "{0} channels": "{0} channels",
-  "{0} media file(s) not found": "{0} 个媒体文件未找到"
+  "{0} media file(s) not found": "{0} 个媒体文件未找到",
+  "Clear project cache": "清除项目缓存",
+  "Context menu": "上下文菜单",
+  "Could not show the log: {0}": "无法显示日志：{0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "在剪辑上下文菜单中显示水平翻转、垂直翻转和反转。键盘快捷键（H、J、R）始终有效。",
+  "Show advanced actions": "显示高级操作",
+  "Show the log": "显示日志"
 }

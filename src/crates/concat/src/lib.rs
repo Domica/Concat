@@ -1042,6 +1042,7 @@ pub fn run() -> Result<(), slint::PlatformError> {
         let at = state.playhead;
         state.seek(at);
     }));
+<<<<<<< ours
     app.on_settings_download_source_changed(on_window!(|state, index: i32| {
         use concat_host::models::SourcePreference;
         let index = (index.max(0) as usize).min(SourcePreference::ALL.len() - 1);
@@ -1056,6 +1057,14 @@ pub fn run() -> Result<(), slint::PlatformError> {
         state.prefs.download_base = (!base.is_empty()).then_some(base);
         state.prefs.save(&state.host.dirs);
         state.apply_download_source();
+=======
+    app.on_settings_custom_context_actions_changed(on_window!(|state, on: bool| {
+        state.prefs.custom_context_actions = on;
+        state.prefs.save(&state.host.dirs);
+        // Rebuild the context menu so the new rows appear / disappear
+        // without waiting for the next right-click to invalidate the cache.
+        state.menu_token += 1;
+>>>>>>> theirs
     }));
     app.on_model_activated(on_window!(|state, id: SharedString| {
         state.model_activate(id.as_str());

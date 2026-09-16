@@ -689,5 +689,11 @@
   "Sort: Name": "Sort: Name",
   "Sort: Type": "Sort: Type",
   "The following media files could not be located. You can relink them to a new folder or dismiss this dialog to continue with offline placeholders.": "找不到下列媒體檔案。您可以將它們重新連結到新資料夾，或關閉此對話方塊以離線佔位符繼續。",
-  "{0} media file(s) not found": "找不到 {0} 個媒體檔案"
+  "{0} media file(s) not found": "找不到 {0} 個媒體檔案",
+  "Clear project cache": "清除專案快取",
+  "Context menu": "內容功能表",
+  "Could not show the log: {0}": "無法顯示日誌：{0}",
+  "Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.": "在剪輯內容功能表中顯示水平翻轉、垂直翻轉和反向。鍵盤快捷鍵（H、J、R）始終有效。",
+  "Show advanced actions": "顯示進階操作",
+  "Show the log": "顯示日誌"
 }

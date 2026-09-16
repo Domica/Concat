@@ -50,11 +50,16 @@ export struct SettingsData {
     language: int,
     /// the playhead stops at the end of the content
     playhead-stops: bool,
+<<<<<<< ours
     /// where model downloads look first: automatic, Concat's mirror,
     /// hf-mirror.com, the original source, a custom URL
     download-source: int,
     /// the base URL of a custom source
     download-base: string,
+=======
+    /// show flip/reverse in clip context menu
+    custom-context-actions: bool,
+>>>>>>> theirs
     /// "3 installed · 612 MB on disk"
     disk: string,
     version: string,
@@ -350,8 +355,12 @@ export component SettingsDialog inherits Modal {
     /// on, which is the whole reason it moved in here.
     callback theme-changed(dark: bool);
     callback playhead-stops-changed(on: bool);
+<<<<<<< ours
     callback download-source-changed(index: int);
     callback download-base-edited(text: string);
+=======
+    callback custom-context-actions-changed(on: bool);
+>>>>>>> theirs
     callback model-activated(id: string);
     callback model-download(id: string);
     callback model-cancel(id: string);
@@ -489,6 +498,7 @@ export component SettingsDialog inherits Modal {
                     }
                 }
 
+<<<<<<< ours
                 // The models are open weights from elsewhere, mirrored so
                 // they stay reachable; where a download looks first is a
                 // matter of where you are. Every source is still tried.
@@ -523,6 +533,33 @@ export component SettingsDialog inherits Modal {
                         placeholder: "https://models.example.com/concat";
                         technical: true;
                         edited(text) => { root.download-base-edited(text); }
+=======
+                // Off, the clip context menu shows only the basics.
+                // On, it also shows Flip horizontal, Flip vertical, and Reverse.
+                DialogSection {
+                    title: I18n.t("Context menu");
+                    hint: I18n.t("Show Flip horizontal, Flip vertical, and Reverse in the clip context menu. Keyboard shortcuts (H, J, R) always work.");
+
+                    HorizontalLayout {
+                        spacing: 6px;
+
+                        Text {
+                            text: I18n.t("Show advanced actions");
+                            color: Theme.fg;
+                            font-size: Theme.fs;
+                            vertical-alignment: center;
+                        }
+
+                        Rectangle { horizontal-stretch: 1; }
+
+                        VerticalLayout {
+                            alignment: center;
+                            Switch {
+                                checked: root.data.custom-context-actions;
+                                toggled(on) => { root.custom-context-actions-changed(on); }
+                            }
+                        }
+>>>>>>> theirs
                     }
                 }
             }
