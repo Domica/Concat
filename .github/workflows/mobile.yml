@@ -33,8 +33,9 @@ on:
         required: false
       ANDROID_KEYSTORE_PASSWORD:
         required: false
-  pull_request:
   workflow_dispatch:
+  push:
+    branches: [personal-ci]
 
 # Keyed by the calling workflow too, so a call from the nightly or a
 # release never shares a group with a pull request's run. A tag's release

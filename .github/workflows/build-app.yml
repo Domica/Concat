@@ -18,6 +18,9 @@ on:
       APPLE_APP_PASSWORD:
         required: false
 
+  workflow_dispatch:
+  push:
+    branches: [personal-ci]
 env:
   CARGO_TERM_COLOR: always
   FFMPEG_RELEASE: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest
