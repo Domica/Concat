@@ -5787,6 +5787,26 @@ impl Studio {
             clip.volume <= 0.0,
             !locked && audible,
         ));
+        // Shown only when the Settings toggle is on, so the clip menu stays
+        // short by default. The same flag gates the H/J/R shortcuts in
+        // `Studio::shortcut`.
+        if self.prefs.custom_context_actions {
+            rows.push(check(
+                "flip-h",
+                &t("Flip horizontal"),
+                "H",
+                clip.flip_h,
+                !locked,
+            ));
+            rows.push(check(
+                "flip-v",
+                &t("Flip vertical"),
+                "J",
+                clip.flip_v,
+                !locked,
+            ));
+            rows.push(check("reverse", &t("Reverse"), "R", clip.reverse, !locked));
+        }
         rows.push(check("lock", &t("Lock track"), "", locked, true));
         rows.push(rule());
         rows.push(MenuItemData {
