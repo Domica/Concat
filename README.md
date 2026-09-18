@@ -113,3 +113,4 @@ Ready to write code? [CONTRIBUTING.md](./CONTRIBUTING.md) covers setup, layout, 
 | Extensibility | 🟢 | 🔴 | 🟢 | OpenCut ships an Editor API, MCP server and plugins. Concat's plugin API is planned |
 | Community | 🟡 | 🟢 | 🟢 | OpenCut has tens of thousands of stars. Concat has a Discord and a handful of contributors |
 | Multiple timelines per project | 🟢 | 🟢 | 🔴 | Concat only |
+
