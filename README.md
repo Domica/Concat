@@ -108,3 +108,4 @@ Optional models download from the settings panel on first use and then never nee
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=jub0t/concat&type=date&legend=top-left" />
  </picture>
 </a>
+
