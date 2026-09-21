@@ -244,8 +244,11 @@ export component ExportDialog inherits Modal {
                 label: I18n.t("Resolution");
                 Select {
                     current: root.data.resolution;
-                    options: ["3840 × 2160", "2560 × 1440", "1920 × 1080", "1280 × 720"];
-                    details: ["4K", "QHD", "1080p", "720p"];
+                    options: [
+                        "3840 × 2160", "2560 × 1440", "1920 × 1080", "1280 × 720",
+                        "Original project resolution", "1.5×", "2×",
+                    ];
+                    details: ["4K", "QHD", "1080p", "720p", "", "", ""];
                     changed(index) => { root.resolution-changed(index); }
                 }
             }
@@ -254,7 +257,7 @@ export component ExportDialog inherits Modal {
                 label: I18n.t("Frame rate");
                 Select {
                     current: root.data.rate;
-                    options: ["24 fps", "30 fps", "60 fps"];
+                    options: ["24 fps", "30 fps", "60 fps", "Original"];
                     changed(index) => { root.rate-changed(index); }
                 }
             }
