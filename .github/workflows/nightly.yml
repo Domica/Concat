@@ -1,0 +1,28 @@
+name: Personal nightly
+
+# Builds the Windows and Android bundles off the branch it is run on, and
+# uploads them as run artifacts. No release is touched, no tag is moved.
+#
+# This is not the upstream nightly — that was retired in d4fc29a on main,
+# and its release scripts changed shape with it. This one exists so a
+# personal build is downloadable from the Actions tab without touching
+# the repository's release page.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - personal-ci
+      - concat_fixed
+      - build-ripple
+      - build-captions
+      - build-advanced-export
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-app.yml
+    secrets: inherit
+
+  phones:
+    uses: ./.github/workflows/mobile.yml
+    secrets: inherit
