@@ -1,14 +1,22 @@
 name: Personal nightly
 
-# Builds the Windows and Android bundles from `concat_fixed` and refreshes
-# a rolling `nightly` pre-release on my fork. Not the upstream nightly —
-# that one is retired (see d4fc29a on main); this exists only so I have a
-# downloadable build off my own branch.
+# Builds the Windows and Android bundles off the branch it is run on, and
+# uploads them as run artifacts. No release is touched, no tag is moved.
+#
+# This is not the upstream nightly — that was retired in d4fc29a on main,
+# and its release scripts changed shape with it. This one exists so a
+# personal build is downloadable from the Actions tab without touching
+# the repository's release page.
 
 on:
   workflow_dispatch:
   push:
-    branches: [concat_fixed]
+    branches:
+      - personal-ci
+      - concat_fixed
+      - build-ripple
+      - build-captions
+      - build-advanced-export
 
 jobs:
   build:
@@ -18,71 +26,3 @@ jobs:
   phones:
     uses: ./.github/workflows/mobile.yml
     secrets: inherit
-
-  publish:
-    name: Refresh the nightly release
-    needs: [build, phones]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v8
-        with:
-          path: bundles
-          merge-multiple: true
-
-      - name: Stamp the bundles by commit
-        id: stamp
-        run: |
-          set -euo pipefail
-          sha=$(git rev-parse --short=10 HEAD)
-          version=$(sed -n 's/^version = "\(.*\)"/\1/p' src/Cargo.toml | head -1)
-          cd bundles
-          for file in Concat-*; do
-            mv "$file" "${file/Concat-$version/Concat-$version-nightly.$sha}"
-          done
-          ls -l
-          {
-            echo "sha=$sha"
-            echo "version=$version"
-            echo "stamped=$version-nightly.$sha"
-            echo "date=$(date -u +%Y-%m-%d)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Checksums
-        run: |
-          set -euo pipefail
-          cd bundles
-          sha256sum -- * > SHA256SUMS
-          ls -l
-
-      - name: Drop the previous nightly's assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if gh release view nightly --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release view nightly --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' \
-              | while read -r asset; do
-                  gh release delete-asset nightly "$asset" --repo "$GITHUB_REPOSITORY" -y
-                done
-          fi
-
-      - name: Move the nightly tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -f nightly
-          git push -f origin nightly
-
-      - uses: softprops/action-gh-release@v3
-        with:
-          tag_name: nightly
-          name: Nightly ${{ steps.stamp.outputs.stamped }}
-          prerelease: true
-          fail_on_unmatched_files: true
-          files: bundles/*
