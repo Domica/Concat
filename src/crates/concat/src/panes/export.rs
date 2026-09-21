@@ -130,9 +130,9 @@ impl ExportPane {
             ExportMsg::Close => self.open = false,
             ExportMsg::NameEdited(name) => self.name = name,
             ExportMsg::ResolutionChanged(index) => {
-                self.resolution = (index.max(0) as usize).min(3);
+                self.resolution = (index.max(0) as usize).min(6);
             }
-            ExportMsg::RateChanged(index) => self.rate = (index.max(0) as usize).min(2),
+            ExportMsg::RateChanged(index) => self.rate = (index.max(0) as usize).min(3),
             ExportMsg::QualityChanged(index) => self.quality = (index.max(0) as usize).min(2),
             ExportMsg::CodecChanged(index) => self.codec = (index.max(0) as usize).min(2),
             ExportMsg::TenBitChanged(on) => self.ten_bit = on,
@@ -193,22 +193,50 @@ impl ExportPane {
     /// The frame the export renders at: the sheet's short side, scaled
     /// along the project's aspect and rounded to even dimensions, which is
     /// what the encoder's chroma subsampling needs.
+    /// The output rate: a named one, or the project's own when the
+    /// dropdown is on "Original". The project setting is the numerator
+    /// and denominator, so 29.97 stays 30000/1001 and does not round.
+    pub fn rate(&self, studio: &Studio) -> (i64, i64) {
+        if self.rate >= EXPORT_RATES.len() {
+            let video = studio.project().active().video;
+            (video.rate_num, video.rate_den)
+        } else {
+            EXPORT_RATES[self.rate]
+        }
+    }
+
     pub fn size(&self, studio: &Studio) -> (u32, u32) {
-        let short = EXPORT_SHORT_SIDES[self.resolution.min(EXPORT_SHORT_SIDES.len() - 1)];
         let (project_w, project_h) = studio.output_size();
         let (project_w, project_h) = (project_w.max(1) as f64, project_h.max(1) as f64);
         let even = |side: f64| ((side / 2.0).round() as u32 * 2).max(2);
-        if project_w >= project_h {
-            (even(short as f64 * project_w / project_h), short)
-        } else {
-            (short, even(short as f64 * project_h / project_w))
+        match self.resolution {
+            // 0..=3: a named 16:9 short side, scaled along the project's own
+            // aspect. A 1:1 project picks the short side as its height, so
+            // "1080p" comes out 1080 × 1080, not 1920 × 1080.
+            0..=3 => {
+                let short = EXPORT_SHORT_SIDES[self.resolution];
+                if project_w >= project_h {
+                    (even(short as f64 * project_w / project_h), short)
+                } else {
+                    (short, even(short as f64 * project_h / project_w))
+                }
+            }
+            // 4: the project's own frame, no scaling. A 300 × 300 project
+            // exports 300 × 300, whatever the named tiers would have said.
+            4 => (even(project_w), even(project_h)),
+            // 5: 1.5× the project's frame. 300 × 300 → 450 × 450.
+            5 => (even(project_w * 1.5), even(project_h * 1.5)),
+            // 6: 2× the project's frame. 300 × 300 → 600 × 600.
+            6 => (even(project_w * 2.0), even(project_h * 2.0)),
+            // Out of range: the project's own frame, same as Original.
+            _ => (even(project_w), even(project_h)),
         }
     }
 
     /// A rough size of the file at one quality tier, in bytes.
     pub fn size_bytes(&self, studio: &Studio, tier: usize) -> f32 {
         let (width, height) = self.size(studio);
-        let (num, den) = EXPORT_RATES[self.rate.min(2)];
+        let (num, den) = self.rate(studio);
         let rate = num as f32 / den as f32;
         let pixels = (width as f32 * height as f32) / (1920.0 * 1080.0);
         // In CBR the bitrate is the number, not the tier; the pixels, rate
@@ -281,7 +309,7 @@ impl ExportPane {
             .collect();
         let mut request = export::request(session, &spec, titles);
         let (width, height) = self.size(studio);
-        let (num, den) = EXPORT_RATES[self.rate.min(2)];
+        let (num, den) = self.rate(studio);
         request.width = width;
         request.height = height;
         request.rate_num = num;
@@ -322,7 +350,7 @@ impl ExportPane {
     /// The sheet as Slint shows it.
     pub fn data(&self, studio: &Studio) -> ExportData {
         let (width, height) = self.size(studio);
-        let (num, den) = EXPORT_RATES[self.rate.min(2)];
+        let (num, den) = self.rate(studio);
         let rate = num as f32 / den as f32;
         let clips = studio.timeline().clips.len();
         let titles = studio
