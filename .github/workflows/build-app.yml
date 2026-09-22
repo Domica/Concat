@@ -90,6 +90,12 @@ jobs:
         working-directory: src
         env:
           RUSTFLAGS: -C link-arg=/STACK:16777216
+          # bindgen (via ffmpeg-sys-the-third) recurses deep over the
+          # FFmpeg 8.1 headers and crashes on the 1 MB stack Windows gives
+          # a spawned thread - STATUS_ACCESS_VIOLATION, exit 0xc0000005.
+          # RUSTFLAGS's /STACK raises the main thread's reserve and does
+          # not reach the threads bindgen spawns; RUST_MIN_STACK does.
+          RUST_MIN_STACK: 33554432
         run: |
           $ErrorActionPreference = "Stop"
           cargo build --profile app -p concat 2>&1 | Tee-Object -FilePath build.log
