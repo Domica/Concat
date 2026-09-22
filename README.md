@@ -1,3 +1,5 @@
+[English](README.md) | [Hrvatski](README.hr.md)
+
 <div align="center">
 <table width="100%">
   <tr>
