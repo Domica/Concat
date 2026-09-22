@@ -138,7 +138,7 @@ impl ExportPane {
             ExportMsg::Close => self.open = false,
             ExportMsg::NameEdited(name) => self.name = name,
             ExportMsg::ResolutionChanged(index) => {
-                self.resolution = (index.max(0) as usize).min(6);
+                self.resolution = (index.max(0) as usize).min(7);
             }
             ExportMsg::RateChanged(index) => self.rate = (index.max(0) as usize).min(3),
             ExportMsg::QualityChanged(index) => self.quality = (index.max(0) as usize).min(2),
@@ -232,13 +232,17 @@ impl ExportPane {
                     (short, even(short as f64 * project_h / project_w))
                 }
             }
-            // 4: the project's own frame, no scaling. A 300 × 300 project
+            // 4: a fixed 21:9 widescreen frame, whatever the project's own
+            // shape. The other named tiers scale along the project aspect;
+            // this one is picked for the aspect itself.
+            4 => (2560, 1080),
+            // 5: the project's own frame, no scaling. A 300 × 300 project
             // exports 300 × 300, whatever the named tiers would have said.
-            4 => (even(project_w), even(project_h)),
-            // 5: 1.5× the project's frame. 300 × 300 → 450 × 450.
-            5 => (even(project_w * 1.5), even(project_h * 1.5)),
-            // 6: 2× the project's frame. 300 × 300 → 600 × 600.
-            6 => (even(project_w * 2.0), even(project_h * 2.0)),
+            5 => (even(project_w), even(project_h)),
+            // 6: 1.5× the project's frame. 300 × 300 → 450 × 450.
+            6 => (even(project_w * 1.5), even(project_h * 1.5)),
+            // 7: 2× the project's frame. 300 × 300 → 600 × 600.
+            7 => (even(project_w * 2.0), even(project_h * 2.0)),
             // Out of range: the project's own frame, same as Original.
             _ => (even(project_w), even(project_h)),
         }
