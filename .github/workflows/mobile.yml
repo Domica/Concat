@@ -6,9 +6,9 @@ name: Build for phones
 #   Android  arm64  -> Concat-<version>-android-arm64.apk
 #   iOS      arm64  -> Concat-<version>-ios-arm64.ipa
 #
-# Reusable, the way build-app.yml is: release.yml calls it on every tag,
-# so a release carries the phones beside the desktops. Pull requests build
-# here directly.
+# Reusable, the way build-app.yml is: nightly.yml calls it on every push
+# to main and release.yml on every tag, so the nightly and the releases
+# carry the phones beside the desktops. Pull requests build here directly.
 #
 # Phones are cross-compiled - the Android job runs on Linux with the NDK,
 # the iOS job on macOS with Xcode - and the two native libraries that
@@ -33,12 +33,13 @@ on:
         required: false
       ANDROID_KEYSTORE_PASSWORD:
         required: false
-  pull_request:
   workflow_dispatch:
+  push:
+    branches: [personal-ci]
 
-# Keyed by the calling workflow too, so a call from a release never shares
-# a group with a pull request's run. A tag's release is never cancelled;
-# everything else is superseded by the next push.
+# Keyed by the calling workflow too, so a call from the nightly or a
+# release never shares a group with a pull request's run. A tag's release
+# is never cancelled; everything else is superseded by the next push.
 concurrency:
   group: mobile-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -62,7 +63,7 @@ jobs:
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' src/Cargo.toml | head -1)
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Building Concat $version for aarch64-linux-android"
-      # The engine pins its toolchain in rust-toolchain.toml, so the phone's
+      # The workspace pins its toolchain in rust-toolchain.toml, so the phone's
       # standard library is added to that toolchain from inside src/,
       # where the pin applies.
       - uses: dtolnay/rust-toolchain@stable
@@ -149,7 +150,8 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # Named by version and target, as the desktop bundles are.
+      # Named by version and target, as the desktop bundles are; the
+      # nightly stamps its commit into the same name.
       - name: Stage
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -165,96 +167,3 @@ jobs:
           path: stage/*
           if-no-files-found: error
 
-  ios:
-    name: iOS arm64
-    runs-on: macos-15
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v7
-      - name: Read the version
-        id: version
-        run: |
-          version=$(sed -n 's/^version = "\(.*\)"/\1/p' src/Cargo.toml | head -1)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Building Concat $version for aarch64-apple-ios"
-      # The engine pins its toolchain in rust-toolchain.toml, so the phone's
-      # standard library is added to that toolchain from inside src/,
-      # where the pin applies.
-      - uses: dtolnay/rust-toolchain@stable
-      - run: rustup target add aarch64-apple-ios
-        working-directory: src
-
-      - run: brew install cmake
-
-      # Restored and saved as two steps rather than one, so the FFmpeg
-      # build is kept the moment it finishes, whatever happens to the Rust
-      # build after it.
-      - name: FFmpeg for iOS (cached)
-        id: ffmpeg
-        uses: actions/cache/restore@v4
-        with:
-          path: src/vendor/ffmpeg/aarch64-apple-ios
-          key: ffmpeg-aarch64-apple-ios-${{ hashFiles('src/scripts/ffmpeg-mobile.sh') }}
-      - name: FFmpeg for iOS
-        if: steps.ffmpeg.outputs.cache-hit != 'true'
-        run: src/scripts/ffmpeg-mobile.sh aarch64-apple-ios
-      - name: FFmpeg for iOS (save)
-        if: steps.ffmpeg.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: src/vendor/ffmpeg/aarch64-apple-ios
-          key: ${{ steps.ffmpeg.outputs.cache-primary-key }}
-
-      - name: sherpa-onnx for iOS
-        run: src/scripts/sherpa-mobile.sh aarch64-apple-ios
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src
-          key: aarch64-apple-ios
-
-      - name: Build
-        working-directory: src
-        run: |
-          set -o pipefail
-          eval "$(scripts/mobile-env.sh aarch64-apple-ios)"
-          cargo build --release -p concat --target aarch64-apple-ios 2>&1 | tee build.log
-
-      - name: Build log to the summary (failure only)
-        if: failure()
-        run: |
-          if [ -f src/build.log ]; then
-            {
-              echo "### Build failed: iOS arm64"
-              echo '```'
-              tail -n 150 src/build.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      # The bundle: binary, Info.plist and the sherpa-onnx framework, ad-hoc
-      # signed. A developer's identity and provisioning profile go on with
-      # codesign before it can be installed on a phone.
-      - name: Bundle
-        run: src/scripts/ios-app.sh aarch64-apple-ios release
-
-      # An .ipa is the bundle under Payload/ in a zip: the form every
-      # sideloading tool and Xcode's Devices window take, re-signing it
-      # with the tester's own identity on the way onto the phone. ditto
-      # keeps the bundle's signature and resource forks where zip would
-      # not.
-      - name: Stage
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          mkdir -p stage payload/Payload
-          cp -R src/target/aarch64-apple-ios/release/Concat.app payload/Payload/
-          (cd payload && ditto -c -k --keepParent Payload "../stage/Concat-$VERSION-ios-arm64.ipa")
-          ls -l stage
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: Concat-ios-arm64
-          path: stage/*
-          if-no-files-found: error
