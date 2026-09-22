@@ -14,7 +14,6 @@
 //! fields.
 
 use concat_host::export::{self, ExportSpec};
-use concat_media::ColorRange;
 
 use crate::format::{bytes, eta};
 use crate::host::{on_ui, spawn};
@@ -39,8 +38,6 @@ pub enum ExportMsg {
     QualityChanged(i32),
     CodecChanged(i32),
     TenBitChanged(bool),
-    /// Limited or full range, as a row of the Advanced section's list.
-    ColorRangeChanged(i32),
     /// The Advanced section is opened or closed.
     AdvancedToggled(bool),
     /// VBR or CBR.
@@ -77,10 +74,6 @@ pub struct ExportPane {
     /// Index into `VideoCodec::ALL`.
     pub codec: usize,
     pub ten_bit: bool,
-    /// Index into `ColorRange::ALL`: 0 limited, 1 full. Read only while
-    /// the Advanced section is open, like the bitrate.
-    /// https://github.com/jub0t/Concat/issues/103
-    pub color_range: usize,
     /// The Advanced section is open: bitrate controls show, and the size
     /// estimate reads the chosen bitrate.
     pub advanced: bool,
@@ -109,7 +102,6 @@ impl Default for ExportPane {
             quality: 1,
             codec: 0,
             ten_bit: false,
-            color_range: 0,
             advanced: false,
             rate_mode: 0,
             bitrate: 8000,
@@ -138,15 +130,12 @@ impl ExportPane {
             ExportMsg::Close => self.open = false,
             ExportMsg::NameEdited(name) => self.name = name,
             ExportMsg::ResolutionChanged(index) => {
-                self.resolution = (index.max(0) as usize).min(6);
+                self.resolution = (index.max(0) as usize).min(7);
             }
             ExportMsg::RateChanged(index) => self.rate = (index.max(0) as usize).min(3),
             ExportMsg::QualityChanged(index) => self.quality = (index.max(0) as usize).min(2),
             ExportMsg::CodecChanged(index) => self.codec = (index.max(0) as usize).min(2),
             ExportMsg::TenBitChanged(on) => self.ten_bit = on,
-            ExportMsg::ColorRangeChanged(index) => {
-                self.color_range = (index.max(0) as usize).min(ColorRange::ALL.len() - 1);
-            }
             ExportMsg::AdvancedToggled(on) => self.advanced = on,
             ExportMsg::RateModeChanged(index) => self.rate_mode = index.max(0) as usize,
             ExportMsg::BitrateChanged(text) => {
@@ -232,13 +221,17 @@ impl ExportPane {
                     (short, even(short as f64 * project_h / project_w))
                 }
             }
-            // 4: the project's own frame, no scaling. A 300 × 300 project
+            // 4: a fixed 21:9 widescreen frame, whatever the project's own
+            // shape. The other named tiers scale along the project aspect;
+            // this one is picked for the aspect itself.
+            4 => (2560, 1080),
+            // 5: the project's own frame, no scaling. A 300 × 300 project
             // exports 300 × 300, whatever the named tiers would have said.
-            4 => (even(project_w), even(project_h)),
-            // 5: 1.5× the project's frame. 300 × 300 → 450 × 450.
-            5 => (even(project_w * 1.5), even(project_h * 1.5)),
-            // 6: 2× the project's frame. 300 × 300 → 600 × 600.
-            6 => (even(project_w * 2.0), even(project_h * 2.0)),
+            5 => (even(project_w), even(project_h)),
+            // 6: 1.5× the project's frame. 300 × 300 → 450 × 450.
+            6 => (even(project_w * 1.5), even(project_h * 1.5)),
+            // 7: 2× the project's frame. 300 × 300 → 600 × 600.
+            7 => (even(project_w * 2.0), even(project_h * 2.0)),
             // Out of range: the project's own frame, same as Original.
             _ => (even(project_w), even(project_h)),
         }
@@ -268,17 +261,6 @@ impl ExportPane {
     /// The codec the sheet has chosen.
     pub fn codec(&self) -> concat_media::VideoCodec {
         concat_media::VideoCodec::ALL[self.codec.min(concat_media::VideoCodec::ALL.len() - 1)]
-    }
-
-    /// The range the file is written in: the Advanced section's choice
-    /// while the section is open, video range otherwise - so a sheet with
-    /// Advanced off exports what it always did.
-    pub fn color_range(&self) -> ColorRange {
-        if self.advanced {
-            ColorRange::ALL[self.color_range.min(ColorRange::ALL.len() - 1)]
-        } else {
-            ColorRange::Limited
-        }
     }
 
     /// Starts the render on a worker. Its reports come back as messages.
@@ -320,7 +302,6 @@ impl ExportPane {
             } else {
                 0
             },
-            color_range: self.color_range(),
         };
         let (frame_w, frame_h) = studio.output_size();
         let titles = studio
@@ -402,7 +383,6 @@ impl ExportPane {
             quality: self.quality as i32,
             codec: self.codec as i32,
             ten_bit: self.ten_bit,
-            color_range: self.color_range as i32,
             advanced: self.advanced,
             rate_mode: self.rate_mode as i32,
             bitrate: self.bitrate as i32,
@@ -414,9 +394,6 @@ impl ExportPane {
                 let mut words = vec![codec.label().to_owned()];
                 if self.ten_bit {
                     words.push("10-bit".to_owned());
-                }
-                if self.color_range() == ColorRange::Full {
-                    words.push(t("full range"));
                 }
                 if codec
                     .encoders(true)
