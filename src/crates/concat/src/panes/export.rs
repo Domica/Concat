@@ -14,6 +14,7 @@
 //! fields.
 
 use concat_host::export::{self, ExportSpec};
+use concat_media::ColorRange;
 
 use crate::format::{bytes, eta};
 use crate::host::{on_ui, spawn};
@@ -38,6 +39,8 @@ pub enum ExportMsg {
     QualityChanged(i32),
     CodecChanged(i32),
     TenBitChanged(bool),
+    /// Limited or full range, as a row of the Advanced section's list.
+    ColorRangeChanged(i32),
     /// The Advanced section is opened or closed.
     AdvancedToggled(bool),
     /// VBR or CBR.
@@ -74,6 +77,10 @@ pub struct ExportPane {
     /// Index into `VideoCodec::ALL`.
     pub codec: usize,
     pub ten_bit: bool,
+    /// Index into `ColorRange::ALL`: 0 limited, 1 full. Read only while
+    /// the Advanced section is open, like the bitrate.
+    /// https://github.com/jub0t/Concat/issues/103
+    pub color_range: usize,
     /// The Advanced section is open: bitrate controls show, and the size
     /// estimate reads the chosen bitrate.
     pub advanced: bool,
@@ -102,6 +109,7 @@ impl Default for ExportPane {
             quality: 1,
             codec: 0,
             ten_bit: false,
+            color_range: 0,
             advanced: false,
             rate_mode: 0,
             bitrate: 8000,
@@ -136,6 +144,9 @@ impl ExportPane {
             ExportMsg::QualityChanged(index) => self.quality = (index.max(0) as usize).min(2),
             ExportMsg::CodecChanged(index) => self.codec = (index.max(0) as usize).min(2),
             ExportMsg::TenBitChanged(on) => self.ten_bit = on,
+            ExportMsg::ColorRangeChanged(index) => {
+                self.color_range = (index.max(0) as usize).min(ColorRange::ALL.len() - 1);
+            }
             ExportMsg::AdvancedToggled(on) => self.advanced = on,
             ExportMsg::RateModeChanged(index) => self.rate_mode = index.max(0) as usize,
             ExportMsg::BitrateChanged(text) => {
@@ -202,6 +213,17 @@ impl ExportPane {
             (video.rate_num, video.rate_den)
         } else {
             EXPORT_RATES[self.rate]
+        }
+    }
+
+    /// What the file is written as: the Advanced list's pick while the
+    /// section is open, video range otherwise — so a sheet with Advanced
+    /// off exports what it always did.
+    pub fn color_range(&self) -> ColorRange {
+        if self.advanced {
+            ColorRange::ALL[self.color_range.min(ColorRange::ALL.len() - 1)]
+        } else {
+            ColorRange::Limited
         }
     }
 
@@ -302,6 +324,7 @@ impl ExportPane {
             } else {
                 0
             },
+            color_range: self.color_range(),
         };
         let (frame_w, frame_h) = studio.output_size();
         let titles = studio
@@ -383,6 +406,7 @@ impl ExportPane {
             quality: self.quality as i32,
             codec: self.codec as i32,
             ten_bit: self.ten_bit,
+            color_range: self.color_range as i32,
             advanced: self.advanced,
             rate_mode: self.rate_mode as i32,
             bitrate: self.bitrate as i32,
