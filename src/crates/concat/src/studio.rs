@@ -160,11 +160,15 @@ pub(crate) const EXPORT_CRF: [u8; 3] = [16, 20, 26];
 pub(crate) const AUDIO_BPS: f32 = 192_000.0;
 
 /// The frame sizes the launch screen offers, and what each label means.
-pub const RESOLUTIONS: [(&str, u32, u32); 4] = [
+pub const RESOLUTIONS: [(&str, u32, u32); 8] = [
     ("1080p", 1920, 1080),
     ("720p", 1280, 720),
     ("4K", 3840, 2160),
-    ("Vertical", 1080, 1920),
+    ("Vertical 9:16", 1080, 1920),
+    ("Portrait 4:5", 1080, 1350),
+    ("Square 1:1", 1080, 1080),
+    ("Cinema 2:1", 2160, 1080),
+    ("Widescreen 21:9", 2560, 1080),
 ];
 
 /// The frame rates, as exact fractions. 29.97 is 30000/1001 and never
