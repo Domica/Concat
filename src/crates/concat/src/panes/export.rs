@@ -216,6 +216,17 @@ impl ExportPane {
         }
     }
 
+    /// What the file is written as: the Advanced list's pick while the
+    /// section is open, video range otherwise — so a sheet with Advanced
+    /// off exports what it always did.
+    pub fn color_range(&self) -> ColorRange {
+        if self.advanced {
+            ColorRange::ALL[self.color_range.min(ColorRange::ALL.len() - 1)]
+        } else {
+            ColorRange::Limited
+        }
+    }
+
     pub fn size(&self, studio: &Studio) -> (u32, u32) {
         let (project_w, project_h) = studio.output_size();
         let (project_w, project_h) = (project_w.max(1) as f64, project_h.max(1) as f64);
