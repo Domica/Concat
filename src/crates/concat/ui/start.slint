@@ -6,6 +6,7 @@ import { Theme } from "theme/theme.slint";
 import { CopyChip } from "primitives/modal.slint";
 import { Glyph, Icon } from "icons.slint";
 import { SegmentedControl } from "primitives/segmented-control.slint";
+import { Select } from "primitives/select.slint";
 import { ThinScrollbar } from "primitives/scrollbar.slint";
 
 // The launch screen.
@@ -635,13 +636,15 @@ export component StartScreen inherits Rectangle {
                     }
 
                     Field {
-                        label: I18n.t("Resolution");
+                        label: I18n.t("Format");
                         stacked: root.narrow;
 
-                        // The control takes the row up to its natural width
-                        // and the whole row on a phone, where four labels
-                        // need every pixel there is.
-                        SegmentedControl {
+                        // A Select rather than the segmented strip the four
+                        // 16:9 tiers used to fit: eight shapes, several with
+                        // aspect words beside the number, and a strip would
+                        // truncate every one. The trigger shows the current
+                        // pick whole; the list holds them all.
+                        Select {
                             width: Math.min(312px, parent.width);
                             options: root.resolutions;
                             current <=> root.res-index;
